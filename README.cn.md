@@ -2,15 +2,14 @@
 
 [English Version](./README.md)
 
+## 简介
 
-## Introduction
+[Web Sentry](./) 是一个开源的Web服务。在选中网页的部分区域后并建立任务后，当该部分网页被改变时，用户会即时收到提醒。
 
-[Web Sentry](./) is an open-source web service for monitoring selected sections of web pages. It automatically notifies the user if any changes happen.
+## 许可证
 
-## License
+开源协议为[GNU General Public License v3.0](./LICENSE)
 
-Licensed under the [GNU General Public License v3.0](./LICENSE) License.
+## 联系方式
 
-## Contact Us
-
-Email: [websentry.project@gmail.com](mailto:websentry.project@gmail.com)
+邮箱: [websentry.project@gmail.com](mailto:websentry.project@gmail.com)
