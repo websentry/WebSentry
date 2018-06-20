@@ -1,6 +1,6 @@
 # Web Sentry
 
-[中文版本](./README_cn.md)
+[中文版本](./README.cn.md)
 
 ## Introduction
 
