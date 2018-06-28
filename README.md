@@ -14,6 +14,8 @@ This repository only holds the WebSentry Master. For Front-end and Rendering Sla
 https://github.com/websentry/WebSentry-FrontEnd  
 https://github.com/websentry/WebSentry-Slave
 
+<small>Icons from [icons8](https://icons8.com/)</small>
+
 ## License
 
 Licensed under the [GNU General Public License v3.0](./LICENSE) License.

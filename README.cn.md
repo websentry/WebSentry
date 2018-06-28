@@ -14,6 +14,8 @@
 https://github.com/websentry/WebSentry-FrontEnd  
 https://github.com/websentry/WebSentry-Slave
 
+<small>Icons from [icons8](https://icons8.com/)</small>
+
 ## 许可证
 
 开源协议为[GNU General Public License v3.0](./LICENSE)
