@@ -8,7 +8,7 @@
 
 ## 架构
 
-![architecture image](assets/architecture.png?raw=true)   
+![architecture image](docs/assets/architecture.png?raw=true)   
 
 该仓库仅包含 WebSentry 的主服务代码。对于前端以及渲染从服务代码，请访问：  
 https://github.com/websentry/WebSentry-FrontEnd  

@@ -8,7 +8,7 @@
 
 ## Architecture
 
-![architecture image](assets/architecture.png?raw=true)  
+![architecture image](docs/assets/architecture.png?raw=true)  
 
 This repository only holds the WebSentry Master. For Front-end and Rendering Slave, please visit:  
 https://github.com/websentry/WebSentry-FrontEnd  
