@@ -18,13 +18,13 @@ func setupLogger() {
 }
 
 func setupRouter() *gin.Engine {
-	r := gin.New()
+    r := gin.New()
     r.Use(gin.Logger())
     r.Use(gin.Recovery())
 
-	r.GET("/ping", func(c *gin.Context) {
+    r.GET("/ping", func(c *gin.Context) {
         c.String(200, "pong")
-	})
+    })
 
     return r
 }
