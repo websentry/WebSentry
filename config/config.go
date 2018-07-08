@@ -4,14 +4,19 @@ import (
     "encoding/json"
     "os"
     "log"
-    "fmt"
 )
 
-type configStruct struct {
+type Config struct {
     Addr string `json:"addr"`
+    Mongodb Mongodb `json:"mongodb"`
 }
 
-var config configStruct
+type Mongodb struct {
+        Url string `json:"url"`
+        Database string `json:"database"`
+}
+
+var config Config
 
 func Init() {
     configFile, err := os.Open("config.json")
@@ -26,10 +31,12 @@ func Init() {
         log.Fatal(err)
     }
 
-    fmt.Println("aaa")
-    fmt.Println(config.Addr)
 }
 
 func GetAddr() string {
     return config.Addr
+}
+
+func GetMongodbConfig() Mongodb {
+    return config.Mongodb
 }
