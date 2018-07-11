@@ -25,28 +25,28 @@ const (
 
 // UserGetSignUpValidation gets user email and password, generate validation code and wait to be validated
 func UserGetSignUpValidation(c *gin.Context) {
-    gUsername := c.Query("username")
+	gUsername := c.Query("username")
 	dbFailureH := gin.H{
 		"msg": "Database Failure",
 	}
 
-    // check existence of the user
+	// check existence of the user
 	userAlreadyExist, err := checkUserExistence(gUsername, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dbFailureH)
 		return
-    }
-    if userAlreadyExist {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "msg": "User already exists",
-        })
-        return 
-    }
+	}
+	if userAlreadyExist {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": "User already exists",
+		})
+		return
+	}
 
-    // connect to db
+	// connect to db
 	collection := c.MustGet("mongo").(*mgo.Database).C("UserValidations")
 
-    // set TTL
+	// set TTL
 	index := mgo.Index{
 		Key: []string{"createdAt"},
 
@@ -57,17 +57,17 @@ func UserGetSignUpValidation(c *gin.Context) {
 		return
 	}
 
-    var validationCode string
-    
-    count, err := collection.Find(bson.M{"username": gUsername}).Count()
-    if err != nil {
+	var validationCode string
+
+	count, err := collection.Find(bson.M{"username": gUsername}).Count()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, dbFailureH)
-        return 
-    }
+		return
+	}
 
 	// TODO: test
 	if count != 0 {
-        // fetched validation code before
+		// fetched validation code before
 		result := models.UserValidation{}
 		err = collection.Find(bson.M{"username": gUsername}).One(&result)
 		if err != nil {
@@ -93,16 +93,16 @@ func UserGetSignUpValidation(c *gin.Context) {
 		return
 	}
 
-    // sendValidationEmail(gUsername, validationCode)
+	// sendValidationEmail(gUsername, validationCode)
 
-    c.JSON(http.StatusOK, gin.H{
-        "msg": "OK",
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "OK",
+	})
 }
 
 // UserCreateWithValidation checks validation code and create the user in the user database
 func UserCreateWithValidation(c *gin.Context) {
-    // TODO
+	// TODO
 }
 
 // checkUserExistence finds out whether an user is already existed or not

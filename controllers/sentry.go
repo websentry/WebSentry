@@ -7,42 +7,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 // [url] the url of the page that needs screenshot
 func SentryRequestFullScreenshot(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
-	if (err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https"))) {
+	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
 		c.JSON(200, gin.H{
-				"code": -3,
-				"msg": "Wrong parameter",
-			})
+			"code": -3,
+			"msg":  "Wrong parameter",
+		})
 		return
 	}
 
 	// TODO: handle extreme long page
 
 	task := gin.H{
-		"url": u.String(),
-		"timeout": 20000,
+		"url":      u.String(),
+		"timeout":  20000,
 		"fullPage": true,
 		"viewport": gin.H{
-			"width": 900,
+			"width":    900,
 			"isMobile": false,
 		},
 		"output": gin.H{
-			"type": "jpg",
+			"type":        "jpg",
 			"progressive": true,
-			"quality": 20,
+			"quality":     20,
 		},
 	}
 
 	id := addFullScreenshotTask(task)
 
 	c.JSON(200, gin.H{
-			"code": 1,
-			"msg": "OK",
-			"taskId": id,
-		})
+		"code":   1,
+		"msg":    "OK",
+		"taskId": id,
+	})
 }
 
 func SentryGetFullScreenshot(c *gin.Context) {
