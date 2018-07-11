@@ -26,6 +26,13 @@ func setupRouter() *gin.Engine {
 		// {
 		// }
 
+		// sentry
+		sentryGroup := v1.Group("/sentry")
+		{
+			sentryGroup.POST("/request_full_screenshot", controllers.SentryRequestFullScreenshot)
+			sentryGroup.POST("/get_full_screenshot", controllers.SentryGetFullScreenshot)
+		}
+
 		// slave
 		// slaveGroup := v1.Group("/slave")
 		// {
@@ -36,9 +43,6 @@ func setupRouter() *gin.Engine {
 		// {
 		// }
 	}
-
-	r.POST("/v1/sentry/request_full_screenshot", controllers.SentryRequestFullScreenshot)
-    r.POST("/v1/sentry/get_full_screenshot", controllers.SentryGetFullScreenshot)
 
 	return r
 }
