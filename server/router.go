@@ -34,9 +34,12 @@ func setupRouter() *gin.Engine {
 		}
 
 		// slave
-		// slaveGroup := v1.Group("/slave")
-		// {
-		// }
+		slaveGroup := v1.Group("/slave")
+		{
+			slaveGroup.POST("/init", controllers.SlaveInit)
+			slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)
+			slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
+		}
 
 		// common
 		// commonGroup := v1.Group("/common")
