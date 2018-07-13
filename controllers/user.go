@@ -12,32 +12,21 @@ import (
 )
 
 const (
-	nanosecond  time.Duration = 1
-	microsecond               = 1000 * nanosecond
-	millisecond               = 1000 * microsecond
-	second                    = 1000 * millisecond
-	minute                    = 60 * second
-	hour                      = 60 * minute
-	day                       = 24 * hour
-
 	validationCodeLength = 6
 )
 
 // UserGetSignUpValidation gets user email and password, generate validation code and wait to be validated
 func UserGetSignUpValidation(c *gin.Context) {
 	gUsername := c.Query("username")
-	dbFailureH := gin.H{
-		"msg": "Database Failure",
-	}
 
 	// check existence of the user
 	userAlreadyExist, err := checkUserExistence(gUsername, c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dbFailureH)
-		return
+		panic(err)
 	}
 	if userAlreadyExist {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
 			"msg": "User already exists",
 		})
 		return
@@ -50,19 +39,17 @@ func UserGetSignUpValidation(c *gin.Context) {
 	index := mgo.Index{
 		Key: []string{"createdAt"},
 
-		ExpireAfter: second * 30,
+		ExpireAfter: time.Second * 30,
 	}
 	if err = collection.EnsureIndex(index); err != nil {
-		c.JSON(http.StatusInternalServerError, dbFailureH)
-		return
+		panic(err)
 	}
 
 	var validationCode string
 
 	count, err := collection.Find(bson.M{"username": gUsername}).Count()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dbFailureH)
-		return
+		panic(err)
 	}
 
 	// TODO: test
@@ -71,8 +58,7 @@ func UserGetSignUpValidation(c *gin.Context) {
 		result := models.UserValidation{}
 		err = collection.Find(bson.M{"username": gUsername}).One(&result)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, dbFailureH)
-			return
+		panic(err)
 		}
 
 		validationCode = result.ValidationCode
@@ -89,13 +75,13 @@ func UserGetSignUpValidation(c *gin.Context) {
 		})
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dbFailureH)
-		return
+		panic(err)
 	}
 
 	// sendValidationEmail(gUsername, validationCode)
 
 	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
 		"msg": "OK",
 	})
 }
