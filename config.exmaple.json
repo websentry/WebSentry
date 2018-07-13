@@ -1,0 +1,13 @@
+{
+  "addr": "127.0.0.1:8080",
+  "mongodb": {
+    "url": "localhost",
+    "database": "websentry"
+  },
+  "validation_email": {
+    "server": "your_smtp_server",
+    "port": "your_smtp_port",
+    "email": "example@example.com",
+    "password": "password"
+  }
+}
