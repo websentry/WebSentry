@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,6 +43,23 @@ func init() {
 	taskq.pQueue = make(chan int32, QUEUE_BUFFER)
 	taskq.nQueue = make(chan int32, QUEUE_BUFFER)
 	taskq.info = make(map[int32]*taskInfo)
+
+	go cleanTask()
+}
+
+func cleanTask() {
+	for {
+		time.Sleep(10 * time.Minute)
+		n := time.Now()
+		taskq.infoMux.Lock()
+		for k, v := range taskq.info {
+			if n.After(v.expire) {
+				delete(taskq.info, k)
+			}
+		}
+
+		taskq.infoMux.Unlock()
+	}
 }
 
 func addFullScreenshotTask(task gin.H) int32 {
@@ -70,7 +88,6 @@ func addFullScreenshotTask(task gin.H) int32 {
 
 func getTask() (int32, *taskInfo) {
 	var tid int32
-	var ti *taskInfo
 
 	for {
 		// select from priority queue first
@@ -92,7 +109,13 @@ func getTask() (int32, *taskInfo) {
 
 	assign:
 		taskq.infoMux.Lock()
-		ti = taskq.info[tid]
+		// check existence
+		ti, ok := taskq.info[tid]
+		if !ok {
+			taskq.infoMux.Unlock()
+			continue
+		}
+		// check expiration
 		if time.Now().After(ti.expire) {
 			delete(taskq.info, tid)
 			taskq.infoMux.Unlock()
@@ -108,6 +131,10 @@ func getTask() (int32, *taskInfo) {
 }
 
 func SlaveInit(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"code":   0,
+		"msg":    "OK",
+	})
 }
 
 func SlaveFetchTask(c *gin.Context) {
@@ -115,20 +142,58 @@ func SlaveFetchTask(c *gin.Context) {
 
 	if tid>=0 {
 		c.JSON(200, gin.H{
-			"code":   1,
+			"code":   0,
 			"msg":    "OK",
 			"taskId": tid,
 			"task": ti.task,
 		})
 	} else {
 		c.JSON(200, gin.H{
-			"code":   1,
+			"code":   0,
 			"msg":    "OK",
 			"taskId": -1,
 		})
 	}
-
 }
 
 func SlaveSubmitTask(c *gin.Context) {
+	taskq.infoMux.Lock()
+	defer taskq.infoMux.Unlock()
+
+	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
+	if err!=nil {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+	ti, ok := taskq.info[int32(tid)]
+	if !ok {
+		c.JSON(200, gin.H{
+			"code": -3,
+			"msg":  "Record not exists",
+		})
+		return
+	}
+
+	ti.status = COMPLETE
+	ti.expire = time.Now().Add(time.Minute * 2)
+
+	file, err := c.FormFile("image")
+	if err!=nil {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+	// c.SaveUploadedFile(file, "test.jpg")
+
+	c.JSON(200, gin.H{
+		"code":   0,
+		"msg":    "OK",
+	})
 }

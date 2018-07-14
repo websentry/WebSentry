@@ -12,7 +12,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
 		c.JSON(200, gin.H{
-			"code": -3,
+			"code": -2,
 			"msg":  "Wrong parameter",
 		})
 		return
@@ -38,7 +38,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 	id := addFullScreenshotTask(task)
 
 	c.JSON(200, gin.H{
-		"code":   1,
+		"code":   0,
 		"msg":    "OK",
 		"taskId": id,
 	})
