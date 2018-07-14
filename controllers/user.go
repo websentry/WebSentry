@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	validationCodeLength = 6
+	verificationCodeLength = 6
 )
 
-// UserGetSignUpValidation gets user email and password, generate validation code and wait to be validated
-func UserGetSignUpValidation(c *gin.Context) {
+// UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
+func UserGetSignUpVerification(c *gin.Context) {
 	gUsername := c.Query("username")
 
 	// check existence of the user
@@ -33,7 +33,7 @@ func UserGetSignUpValidation(c *gin.Context) {
 	}
 
 	// connect to db
-	collection := c.MustGet("mongo").(*mgo.Database).C("UserValidations")
+	collection := c.MustGet("mongo").(*mgo.Database).C("UserVerifications")
 
 	// set TTL
 	index := mgo.Index{
@@ -45,7 +45,7 @@ func UserGetSignUpValidation(c *gin.Context) {
 		panic(err)
 	}
 
-	var validationCode string
+	var verificationCode string
 
 	count, err := collection.Find(bson.M{"username": gUsername}).Count()
 	if err != nil {
@@ -54,23 +54,23 @@ func UserGetSignUpValidation(c *gin.Context) {
 
 	// TODO: test
 	if count != 0 {
-		// fetched validation code before
-		result := models.UserValidation{}
+		// fetched verification code before
+		result := models.UserVerification{}
 		err = collection.Find(bson.M{"username": gUsername}).One(&result)
 		if err != nil {
 		panic(err)
 		}
 
-		validationCode = result.ValidationCode
+		verificationCode = result.VerificationCode
 		err = collection.Update(
 			bson.M{"username": gUsername},
 			bson.M{"$set": bson.M{"createdAt": time.Now()}},
 		)
 	} else {
-		validationCode = generateValidationCode()
-		err = collection.Insert(&models.UserValidation{
+		verificationCode = generateVerificationCode()
+		err = collection.Insert(&models.UserVerification{
 			Username:       gUsername,
-			ValidationCode: validationCode,
+			VerificationCode: verificationCode,
 			CreatedAt:      time.Now(),
 		})
 	}
@@ -78,7 +78,7 @@ func UserGetSignUpValidation(c *gin.Context) {
 		panic(err)
 	}
 
-	// sendValidationEmail(gUsername, validationCode)
+	// send
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -86,8 +86,8 @@ func UserGetSignUpValidation(c *gin.Context) {
 	})
 }
 
-// UserCreateWithValidation checks validation code and create the user in the user database
-func UserCreateWithValidation(c *gin.Context) {
+// UserCreateWithVerification checks verification code and create the user in the user database
+func UserCreateWithVerification(c *gin.Context) {
 	// TODO
 }
 
@@ -108,11 +108,11 @@ func checkUserExistence(u string, c *gin.Context) (bool, error) {
 	return true, nil
 }
 
-// generateValidationCode outputs a random 6-digit code
-func generateValidationCode() string {
+// generateVerificationCode outputs a random 6-digit code
+func generateVerificationCode() string {
 	numBytes := [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rst := make([]byte, validationCodeLength)
+	rst := make([]byte, verificationCodeLength)
 
 	for i := range rst {
 		rst[i] = numBytes[r.Intn(len(numBytes))]

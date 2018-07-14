@@ -4,10 +4,10 @@ import (
 	"time"
 )
 
-// UserValidation : Entry in the Validation table
-type UserValidation struct {
+// UserVerification : Entry in the Verification table
+type UserVerification struct {
 	Username       string    `bson:"username"`
-	ValidationCode string    `bson:"validationCode"`
+	VerificationCode string    `bson:"verification"`
 	CreatedAt      time.Time `bson:"createdAt"`
 }
 

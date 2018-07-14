@@ -7,13 +7,21 @@ import (
 )
 
 type Config struct {
-	Addr    string  `json:"addr"`
-	Mongodb Mongodb `json:"mongodb"`
+	Addr            string          `json:"addr"`
+	Mongodb         Mongodb         `json:"mongodb"`
+	VerificationEmail VerificationEmail `json:"verification_email"`
 }
 
 type Mongodb struct {
 	Url      string `json:"url"`
 	Database string `json:"database"`
+}
+
+type VerificationEmail struct {
+	Server   string `json:"server"`
+	Port     int    `json:"port"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 var config Config
@@ -39,4 +47,8 @@ func GetAddr() string {
 
 func GetMongodbConfig() Mongodb {
 	return config.Mongodb
+}
+
+func GetVerificationEmailConfig() VerificationEmail {
+	return config.VerificationEmail
 }

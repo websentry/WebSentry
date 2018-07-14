@@ -4,9 +4,9 @@
     "url": "localhost",
     "database": "websentry"
   },
-  "validation_email": {
+  "verification_email": {
     "server": "your_smtp_server",
-    "port": "your_smtp_port",
+    "port": 587,
     "email": "example@example.com",
     "password": "password"
   }
