@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/websentry/websentry/config"
 	"gopkg.in/gomail.v2"
-	// "crypto/tls"
+	"html/template"
+	"strings"
 	"time"
 )
 
@@ -22,7 +24,6 @@ func VerificationEmailInit() {
 
 	go func() {
 		d := gomail.NewDialer(c.Server, c.Port, c.Email, c.Password)
-		//d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 		var sc gomail.SendCloser
 		var err error
@@ -47,7 +48,8 @@ func VerificationEmailInit() {
 					// TODO: handle sending email failure
 				}
 
-				fmt.Println("! [INFO] Email sent")
+				fmt.Println("[INFO]: Verification Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
+
 			case <-time.After(time.Minute):
 				if open {
 					if err = sc.Close(); err != nil {
@@ -66,10 +68,30 @@ func SendVerificationEmail(e, vc string) {
 	m := gomail.NewMessage()
 	m.SetHeader("From", c.Email)
 	m.SetHeader("To", e)
-	m.SetHeader("Subject", "Verify Your Account on Websentry")
-	m.SetBody("text/html", "<b>"+vc+"</b>")
+	m.SetHeader("Subject", "Verify Your Account on WebSentry")
+	m.SetHeader("MIME-version", "1.0")
+	m.SetBody("text/html", generateVerificationEmailHTML(vc))
 
 	go func() {
 		ch <- m
 	}()
+}
+
+func generateVerificationEmailHTML(vc string) string {
+	b := new(bytes.Buffer)
+
+	// gp := os.Getenv("GOPATH")
+	// htmlPath := path.Join(gp, "src/github.com/websentry/websentry/templates/verificationEmail.html")
+
+	t, err := template.ParseFiles("templates/verificationEmail.html")
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err = t.Execute(b, map[string]string{"verficationCode": vc}); err != nil {
+		panic(err)
+	}
+
+	return b.String()
 }

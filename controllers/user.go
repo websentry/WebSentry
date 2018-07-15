@@ -13,11 +13,14 @@ import (
 
 const (
 	verificationCodeLength = 6
+	expireTime = time.Minute * 5
 )
 
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
 	gUsername := c.Query("username")
+
+	// TODO: check parameter if email
 
 	// check existence of the user
 	userAlreadyExist, err := checkUserExistence(gUsername, c)
@@ -39,7 +42,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	index := mgo.Index{
 		Key: []string{"createdAt"},
 
-		ExpireAfter: time.Second * 30,
+		ExpireAfter: expireTime,
 	}
 	if err = collection.EnsureIndex(index); err != nil {
 		panic(err)
@@ -78,7 +81,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	// send
+	SendVerificationEmail(gUsername, verificationCode)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,

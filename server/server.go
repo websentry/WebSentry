@@ -11,7 +11,6 @@ func Init() {
 
     // initialize verification email daemon
     controllers.VerificationEmailInit()
-    // TODO: delete only for test
 
     r := setupRouter()
     r.Run(config.GetAddr())
