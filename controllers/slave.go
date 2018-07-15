@@ -25,6 +25,8 @@ type taskInfo struct {
 	status int
 	channel chan bool
 	image []byte
+	feedbackCode int
+	feedbackMsg string
 }
 
 type taskQueue struct {
@@ -182,19 +184,26 @@ func SlaveSubmitTask(c *gin.Context) {
 		return
 	}
 
+	feedbackCode, err := strconv.ParseInt(c.Query("feedback"), 10, 32)
+	if feedbackCode!=0 {
+		ti.feedbackCode = int(feedbackCode)
+		ti.feedbackMsg = c.Query("msg")
+	} else {
+		ti.feedbackCode = 0
 
-	fileH, err := c.FormFile("image")
-	if err!=nil {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
-		return
+		fileH, err := c.FormFile("image")
+		if err!=nil {
+			c.JSON(200, gin.H{
+				"code": -2,
+				"msg":  "Wrong parameter",
+			})
+			return
+		}
+
+		file, _ := fileH.Open()
+		ti.image, _ = ioutil.ReadAll(file)
+
 	}
-
-	file, _ := fileH.Open()
-
-	ti.image, _ = ioutil.ReadAll(file)
 
 	ti.status = COMPLETE
 	ti.expire = time.Now().Add(time.Minute * 2)
@@ -250,11 +259,15 @@ func waitFullScreenshot(c *gin.Context) {
 			"complete": false,
 		})
 	} else {
+		taskq.infoMux.Lock()
 		c.JSON(200, gin.H{
 			"code": 0,
 			"msg":  "OK",
 			"complete": true,
+			"feedbackCode": ti.feedbackCode,
+			"feedbackMsg": ti.feedbackMsg,
 		})
+		taskq.infoMux.Unlock()
 
 	}
 }
