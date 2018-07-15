@@ -44,6 +44,10 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 	})
 }
 
-func SentryGetFullScreenshot(c *gin.Context) {
+func SentryWaitFullScreenshot(c *gin.Context) {
+	waitFullScreenshot(c)
+}
 
+func SentryGetFullScreenshot(c *gin.Context) {
+	getFullScreenshot(c)
 }

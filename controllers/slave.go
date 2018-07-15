@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 	"strconv"
+	"io/ioutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +23,8 @@ type taskInfo struct {
 	task   gin.H
 	expire time.Time
 	status int
+	channel chan bool
+	image []byte
 }
 
 type taskQueue struct {
@@ -67,6 +70,7 @@ func addFullScreenshotTask(task gin.H) int32 {
 	ti.task = task
 	ti.status = IN_QUEUE
 	ti.expire = time.Now().Add(time.Minute * 1)
+	ti.channel = make(chan bool)
 
 	tid := rand.Int31()
 
@@ -178,10 +182,8 @@ func SlaveSubmitTask(c *gin.Context) {
 		return
 	}
 
-	ti.status = COMPLETE
-	ti.expire = time.Now().Add(time.Minute * 2)
 
-	file, err := c.FormFile("image")
+	fileH, err := c.FormFile("image")
 	if err!=nil {
 		c.JSON(200, gin.H{
 			"code": -2,
@@ -190,10 +192,98 @@ func SlaveSubmitTask(c *gin.Context) {
 		return
 	}
 
-	// c.SaveUploadedFile(file, "test.jpg")
+	file, _ := fileH.Open()
+
+	ti.image, _ = ioutil.ReadAll(file)
+
+	ti.status = COMPLETE
+	ti.expire = time.Now().Add(time.Minute * 2)
+
+	close(ti.channel)
+
 
 	c.JSON(200, gin.H{
 		"code":   0,
 		"msg":    "OK",
 	})
+}
+
+func waitFullScreenshot(c *gin.Context) {
+
+	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
+	if err!=nil {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+	taskq.infoMux.Lock()
+
+	ti, ok := taskq.info[int32(tid)]
+	if !ok {
+		taskq.infoMux.Unlock()
+		c.JSON(200, gin.H{
+			"code": -3,
+			"msg":  "Record not exists",
+		})
+		return
+	}
+	incomplete := ti.status!= COMPLETE
+	taskq.infoMux.Unlock()
+
+	timeoutFlag := false
+	if incomplete {
+		select {
+		case <-ti.channel:
+			timeoutFlag = false
+		case <-time.After(LONG_POLLING_TIMEOUT):
+			timeoutFlag = true
+		}
+	}
+
+	if timeoutFlag {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "OK",
+			"complete": false,
+		})
+	} else {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "OK",
+			"complete": true,
+		})
+
+	}
+}
+
+func getFullScreenshot(c *gin.Context) {
+	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
+	if err!=nil {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+
+	taskq.infoMux.Lock()
+
+	ti, ok := taskq.info[int32(tid)]
+	if !ok {
+		taskq.infoMux.Unlock()
+		c.String(404, "")
+		return
+	}
+	taskq.infoMux.Unlock()
+
+	if ti.status!=COMPLETE || ti.image==nil {
+		c.String(404, "")
+		return
+	}
+
+	c.Data(200, "image/jpeg", ti.image)
 }
