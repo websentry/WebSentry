@@ -181,16 +181,16 @@ func SlaveSubmitTask(c *gin.Context) {
 	ti.status = COMPLETE
 	ti.expire = time.Now().Add(time.Minute * 2)
 
-	// file, err := c.FormFile("image")
-	// if err!=nil {
-	// 	c.JSON(200, gin.H{
-	// 		"code": -2,
-	// 		"msg":  "Wrong parameter",
-	// 	})
-	// 	return
-	// }
+	file, err := c.FormFile("image")
+	if err!=nil {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
 
-	// c.SaveUploadedFile(file, "test.jpg")
+	c.SaveUploadedFile(file, "test.jpg")
 
 	c.JSON(200, gin.H{
 		"code":   0,
