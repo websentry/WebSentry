@@ -22,6 +22,7 @@ func VerificationEmailInit() {
 	ch = make(chan *gomail.Message, chBuffer)
 	c = config.GetVerificationEmailConfig()
 
+
 	go func() {
 		d := gomail.NewDialer(c.Server, c.Port, c.Email, c.Password)
 
@@ -45,7 +46,7 @@ func VerificationEmailInit() {
 				}
 
 				if err := gomail.Send(sc, m); err != nil {
-					// TODO: handle sending email failure
+					// TODO: log
 				}
 
 				fmt.Println("[INFO]: Verification Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
@@ -89,7 +90,7 @@ func generateVerificationEmailHTML(vc string) string {
 		panic(err)
 	}
 
-	if err = t.Execute(b, map[string]string{"verficationCode": vc}); err != nil {
+	if err = t.Execute(b, map[string]string{"verificationCode": vc}); err != nil {
 		panic(err)
 	}
 

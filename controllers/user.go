@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/websentry/websentry/models"
 	"gopkg.in/mgo.v2"
@@ -13,65 +12,51 @@ import (
 
 const (
 	verificationCodeLength = 6
-	expireTime = time.Minute * 5
 )
 
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
 	gUsername := c.Query("username")
-
-	// TODO: check parameter if email
+	db := c.MustGet("mongo").(*mgo.Database)
 
 	// check existence of the user
-	userAlreadyExist, err := checkUserExistence(gUsername, c)
+	userAlreadyExist, err := models.CheckUserExistence(db, 0, gUsername)
 	if err != nil {
 		panic(err)
 	}
 	if userAlreadyExist {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -2,
-			"msg": "User already exists",
+			"msg": "Wrongn parameter: User already exists",
 		})
 		return
 	}
 
-	// connect to db
-	collection := c.MustGet("mongo").(*mgo.Database).C("UserVerifications")
-
-	// set TTL
-	index := mgo.Index{
-		Key: []string{"createdAt"},
-
-		ExpireAfter: expireTime,
-	}
-	if err = collection.EnsureIndex(index); err != nil {
+	if err = models.EnsureUserVerificationsIndex(db); err != nil {
 		panic(err)
 	}
 
 	var verificationCode string
 
-	count, err := collection.Find(bson.M{"username": gUsername}).Count()
-	if err != nil {
-		panic(err)
-	}
+	userVerificationExist, err := models.CheckUserExistence(db, 1, gUsername)
 
 	// TODO: test
-	if count != 0 {
+	if userVerificationExist {
 		// fetched verification code before
 		result := models.UserVerification{}
-		err = collection.Find(bson.M{"username": gUsername}).One(&result)
+		err = models.GetUser(db, 1, gUsername, &result)
 		if err != nil {
 		panic(err)
 		}
 
 		verificationCode = result.VerificationCode
-		err = collection.Update(
+		err = models.GetUserCollection(db, 1).Update(
 			bson.M{"username": gUsername},
 			bson.M{"$set": bson.M{"createdAt": time.Now()}},
 		)
 	} else {
 		verificationCode = generateVerificationCode()
-		err = collection.Insert(&models.UserVerification{
+		err = models.GetUserCollection(db, 1).Insert(&models.UserVerification{
 			Username:       gUsername,
 			VerificationCode: verificationCode,
 			CreatedAt:      time.Now(),
@@ -91,25 +76,19 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 // UserCreateWithVerification checks verification code and create the user in the user database
 func UserCreateWithVerification(c *gin.Context) {
-	// TODO
+	// gUsername := c.Query("username")
+	// gPassword := c.Query("password")
+	// gVerificationCode := c.Query("verificationcode")
+
+	// check if the user exist in UserVerifications table
+
+	// check if the verification code is correct
+
+	// check if it is already in the Users table
+
+
 }
 
-// checkUserExistence finds out whether an user is already existed or not
-func checkUserExistence(u string, c *gin.Context) (bool, error) {
-	collection := c.MustGet("mongo").(*mgo.Database).C("Users")
-
-	count, err := collection.Find(bson.M{"username": u}).Count()
-
-	if err != nil {
-		return false, errors.New("Failed to count")
-	}
-
-	if count == 0 {
-		return false, nil
-	}
-
-	return true, nil
-}
 
 // generateVerificationCode outputs a random 6-digit code
 func generateVerificationCode() string {
