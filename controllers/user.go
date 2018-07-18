@@ -39,8 +39,10 @@ func UserGetSignUpVerification(c *gin.Context) {
 	var verificationCode string
 
 	userVerificationExist, err := models.CheckUserExistence(db, 1, gUsername)
+	if err != nil {
+		panic(err)
+	}
 
-	// TODO: test
 	if userVerificationExist {
 		// fetched verification code before
 		result := models.UserVerification{}
@@ -135,6 +137,10 @@ func UserCreateWithVerification(c *gin.Context) {
 		Password:    hash,
 		TimeCreated: time.Now(),
 	})
+
+	if err != nil {
+		panic(err)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
