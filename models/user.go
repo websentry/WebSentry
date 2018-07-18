@@ -4,11 +4,13 @@ import (
 	"errors"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 const (
 	expireTime = time.Minute * 1
+	encryptionCost = 14
 )
 
 // UserVerification : Entry in the Verification table
@@ -91,6 +93,14 @@ func GetUserCollection(db *mgo.Database, dn int) *mgo.Collection {
 	return c
 }
 
-func Encrypt(s string) string {
-	return s
+// EncryptPassword encrypts the password
+func EncryptPassword(p string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(p), encryptionCost)
+	return string(bytes), err
+}
+
+// CheckPassword check if the password matches
+func CheckPassword(p string, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(p))
+	return err == nil
 }
