@@ -27,7 +27,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userAlreadyExist {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -2,
-			"msg": "Wrongn parameter: User already exists",
+			"msg":  "Wrongn parameter: User already exists",
 		})
 		return
 	}
@@ -46,7 +46,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		result := models.UserVerification{}
 		err = models.GetUser(db, 1, gUsername, &result)
 		if err != nil {
-		panic(err)
+			panic(err)
 		}
 
 		verificationCode = result.VerificationCode
@@ -57,9 +57,9 @@ func UserGetSignUpVerification(c *gin.Context) {
 	} else {
 		verificationCode = generateVerificationCode()
 		err = models.GetUserCollection(db, 1).Insert(&models.UserVerification{
-			Username:       gUsername,
+			Username:         gUsername,
 			VerificationCode: verificationCode,
-			CreatedAt:      time.Now(),
+			CreatedAt:        time.Now(),
 		})
 	}
 	if err != nil {
@@ -70,25 +70,77 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
-		"msg": "OK",
+		"msg":  "OK",
 	})
 }
 
 // UserCreateWithVerification checks verification code and create the user in the user database
 func UserCreateWithVerification(c *gin.Context) {
-	// gUsername := c.Query("username")
-	// gPassword := c.Query("password")
-	// gVerificationCode := c.Query("verificationcode")
+	gUsername := c.Query("username")
+	gPassword := c.Query("password")
+	gVerificationCode := c.Query("verificationcode")
 
-	// check if the user exist in UserVerifications table
-
-	// check if the verification code is correct
+	db := c.MustGet("mongo").(*mgo.Database)
 
 	// check if it is already in the Users table
+	userExist, err := models.CheckUserExistence(db, 0, gUsername)
+	if err != nil {
+		panic(err)
+	}
 
+	if userExist {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter: user already exists",
+		})
+		return
+	}
 
+	// check if the user exist in UserVerifications table
+	userVerificationExist, err := models.CheckUserExistence(db, 1, gUsername)
+	if err != nil {
+		panic(err)
+	}
+
+	if !userVerificationExist {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -3,
+			"msg":  "Record does not exist",
+		})
+		return
+	}
+
+	// check if the verification code is correct
+	result := models.UserVerification{}
+	err = models.GetUser(db, 1, gUsername, &result)
+	if err != nil {
+		panic(err)
+	}
+	if result.VerificationCode != gVerificationCode {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter: verification codes do not match",
+		})
+		return
+	}
+
+	// insert to User table
+	hash, err := models.HashPassword(gPassword)
+	if err != nil {
+		panic(err)
+	}
+
+	err = models.GetUserCollection(db, 0).Insert(&models.User{
+		Username:    gUsername,
+		Password:    hash,
+		TimeCreated: time.Now(),
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "OK",
+	})
 }
-
 
 // generateVerificationCode outputs a random 6-digit code
 func generateVerificationCode() string {

@@ -2,30 +2,30 @@ package models
 
 import (
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 const (
-	expireTime = time.Minute * 1
+	expireTime     = time.Minute * 1
 	encryptionCost = 14
 )
 
 // UserVerification : Entry in the Verification table
 type UserVerification struct {
-	Username         string        `bson:"username"`
-	VerificationCode string        `bson:"verification"`
-	CreatedAt        time.Time     `bson:"createdAt"`
+	Username         string    `bson:"username"`
+	VerificationCode string    `bson:"verification"`
+	CreatedAt        time.Time `bson:"createdAt"`
 }
 
 // User : Entry in the actual User table
 // bcrypt
 type User struct {
-	Username    string        `bson:"username"`
-	Password    string        `bson:"password"`
-	TimeCreated time.Time     `bson:"createdAt"`
+	Username    string    `bson:"username"`
+	Password    string    `bson:"password"`
+	TimeCreated time.Time `bson:"createdAt"`
 
 	// TODO: task id?
 }
@@ -93,8 +93,8 @@ func GetUserCollection(db *mgo.Database, dn int) *mgo.Collection {
 	return c
 }
 
-// EncryptPassword encrypts the password
-func EncryptPassword(p string) (string, error) {
+// HashPassword encrypts the password
+func HashPassword(p string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(p), encryptionCost)
 	return string(bytes), err
 }
