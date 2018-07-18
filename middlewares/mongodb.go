@@ -23,10 +23,18 @@ func ConnectToDb() {
 	session = s
 }
 
+func GetDBSession() *mgo.Session {
+	return session.Clone()
+}
+
+func SessionToDB(s *mgo.Session) *mgo.Database {
+	return s.DB(database)
+}
+
 func MapDb(c *gin.Context) {
-	s := session.Clone()
+	s := GetDBSession()
 	defer s.Close()
 
-	c.Set("mongo", s.DB(database))
+	c.Set("mongo", SessionToDB(s))
 	c.Next()
 }

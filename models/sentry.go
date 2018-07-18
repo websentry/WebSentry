@@ -24,26 +24,35 @@ type Sentry struct {
 	Task map[string]interface{} `bson:"task"`
 }
 
-func GetUncheckedSentries(db *mgo.Database) []Sentry {
+func GetUncheckedSentry(db *mgo.Database) *Sentry {
 	c := db.C("Sentries")
 
-	var results []Sentry
-	err := c.Find(bson.M{"nextCheckTime": bson.M{"$lte": time.Now(),},}).All(&results)
-	if err!=nil {
-		panic(err)
+	now := time.Now()
+
+	// delay selected sentry 10 min
+	change := mgo.Change{
+		Update: bson.M{"$set": bson.M{"nextCheckTime": now.Add(time.Minute * 15)}},
+		ReturnNew: false,
 	}
 
-	return results
+	// execute on a sentry that is due
+	var result Sentry
+	_, err := c.Find(bson.M{"nextCheckTime": bson.M{"$lte": now,},}).Sort("-nextCheckTime").Apply(change, &result)
+	if err!=nil {
+		return nil
+	}
+
+	return &result
 }
 
-func GetSentry(db *mgo.Database, id bson.ObjectId) Sentry {
+func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	c := db.C("Sentries")
 
 	var result Sentry
 	err := c.Find(bson.M{"_id": id}).One(&result)
 	if err!=nil {
-		panic(err)
+		return nil
 	}
 
-	return result
+	return &result
 }

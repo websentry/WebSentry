@@ -5,7 +5,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"time"
+	"github.com/websentry/websentry/middlewares"
+	"github.com/websentry/websentry/models"
 )
+
+func init() {
+	go sentryTaskScheduler()
+}
 
 // [url] the url of the page that needs screenshot
 func SentryRequestFullScreenshot(c *gin.Context) {
@@ -50,4 +57,26 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 
 func SentryGetFullScreenshot(c *gin.Context) {
 	getFullScreenshot(c)
+}
+
+func sentryTaskScheduler() {
+	for {
+		time.Sleep(2 * time.Minute)
+
+		s := middlewares.GetDBSession()
+		db := middlewares.SessionToDB(s)
+		for {
+			sentry := models.GetUncheckedSentry(db)
+			if sentry == nil {
+				break
+			}
+			// add task
+			addSentryTask(sentry)
+		}
+		s.Clone()
+	}
+}
+
+func compareSentryTaskImage(tid int32, ti *taskInfo) {
+
 }

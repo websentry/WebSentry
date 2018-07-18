@@ -8,32 +8,46 @@ import (
 	"io/ioutil"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/mgo.v2/bson"
+	"github.com/websentry/websentry/models"
 )
 
 const (
 	LONG_POLLING_TIMEOUT = 60 * time.Second
 	QUEUE_BUFFER = 100
 
-	IN_QUEUE = 0
-	ASSIGNED = 1
-	COMPLETE = 2
+	TS_IN_QUEUE = 0
+	TS_ASSIGNED = 1
+	TS_COMPLETE = 2
+
+	TM_FULLSCREEN = 0
+	TM_SENTRY = 1
 )
 
 type taskInfo struct {
-	task   gin.H
-	expire time.Time
+	// common
+	mode int
 	status int
-	channel chan bool
 	image []byte
 	feedbackCode int
 	feedbackMsg string
+	task   gin.H
+	expire time.Time
+
+	// screenshot
+	channel chan bool
+
+	// sentry
+	sentryId bson.ObjectId
+	version int
+	baseImage *models.SentryImage
 }
 
 type taskQueue struct {
 
 	// high priority queue (screenshot)
 	pQueue chan int32
-	// normal queue (sencry task)
+	// normal queue (sentry task)
 	nQueue chan int32
 
 	infoMux sync.Mutex
@@ -67,13 +81,7 @@ func cleanTask() {
 	}
 }
 
-func addFullScreenshotTask(task gin.H) int32 {
-	ti := new(taskInfo)
-	ti.task = task
-	ti.status = IN_QUEUE
-	ti.expire = time.Now().Add(time.Minute * 1)
-	ti.channel = make(chan bool)
-
+func insertTaskinfo(ti *taskInfo) int32 {
 	tid := rand.Int31()
 
 	taskq.infoMux.Lock()
@@ -87,6 +95,35 @@ func addFullScreenshotTask(task gin.H) int32 {
 
 	taskq.info[tid] = ti
 	taskq.infoMux.Unlock()
+
+	return tid
+}
+
+func addSentryTask(s *models.Sentry) int32 {
+	ti := new(taskInfo)
+	ti.task = s.Task
+	ti.mode = TM_SENTRY
+	ti.status = TS_IN_QUEUE
+	ti.sentryId = s.Id
+	ti.baseImage = &s.Image
+	ti.version = s.Version
+	ti.expire = time.Now().Add(time.Minute * 5)
+
+	tid := insertTaskinfo(ti)
+
+	taskq.nQueue <- tid
+	return tid
+}
+
+func addFullScreenshotTask(task gin.H) int32 {
+	ti := new(taskInfo)
+	ti.task = task
+	ti.mode = TM_FULLSCREEN
+	ti.status = TS_IN_QUEUE
+	ti.expire = time.Now().Add(time.Minute * 1)
+	ti.channel = make(chan bool)
+
+	tid := insertTaskinfo(ti)
 
 	taskq.pQueue <- tid
 	return tid
@@ -130,7 +167,7 @@ func getTask() (int32, *taskInfo) {
 		taskq.infoMux.Unlock()
 
 		ti.expire = time.Now().Add(time.Minute * 4)
-		ti.status = ASSIGNED
+		ti.status = TS_ASSIGNED
 
 		return tid, ti
 	}
@@ -205,10 +242,14 @@ func SlaveSubmitTask(c *gin.Context) {
 
 	}
 
-	ti.status = COMPLETE
+	ti.status = TS_COMPLETE
 	ti.expire = time.Now().Add(time.Minute * 2)
 
-	close(ti.channel)
+	if ti.mode==TM_FULLSCREEN {
+		close(ti.channel)
+	} else {
+		go compareSentryTaskImage(int32(tid), ti)
+	}
 
 
 	c.JSON(200, gin.H{
@@ -231,7 +272,7 @@ func waitFullScreenshot(c *gin.Context) {
 	taskq.infoMux.Lock()
 
 	ti, ok := taskq.info[int32(tid)]
-	if !ok {
+	if !ok || ti.mode!=TM_FULLSCREEN {
 		taskq.infoMux.Unlock()
 		c.JSON(200, gin.H{
 			"code": -3,
@@ -239,7 +280,7 @@ func waitFullScreenshot(c *gin.Context) {
 		})
 		return
 	}
-	incomplete := ti.status!= COMPLETE
+	incomplete := ti.status!= TS_COMPLETE
 	taskq.infoMux.Unlock()
 
 	timeoutFlag := false
@@ -293,7 +334,7 @@ func getFullScreenshot(c *gin.Context) {
 	}
 	taskq.infoMux.Unlock()
 
-	if ti.status!=COMPLETE || ti.image==nil {
+	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN {
 		c.String(404, "")
 		return
 	}
