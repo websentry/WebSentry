@@ -3,9 +3,13 @@ package controllers
 import (
 	"net/url"
 	"strings"
+	"math"
+	"image"
+	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"time"
+
 	"github.com/websentry/websentry/middlewares"
 	"github.com/websentry/websentry/models"
 )
@@ -75,6 +79,33 @@ func sentryTaskScheduler() {
 		}
 		s.Clone()
 	}
+}
+
+func pixelDifference(a uint32, b uint32) float64 {
+	return math.Abs(float64(a)-float64(b)) / 65535.0
+}
+
+func compareImage(a image.Image, b image.Image) (float32, error) {
+	if a.Bounds() != b.Bounds() {
+		return 0, errors.New("images with different size")
+	}
+
+	bounds := a.Bounds()
+	total := 0
+	v := 0.0
+	for i := bounds.Min.X; i < bounds.Max.X; i++ {
+		for j := bounds.Min.Y; j < bounds.Max.Y; j++ {
+
+			ar, ag, ab, _ := a.At(i, j).RGBA()
+			br, bg, bb, _ := b.At(i, j).RGBA()
+			v += pixelDifference(ar, br)
+			v += pixelDifference(ag, bg)
+			v += pixelDifference(ab, bb)
+
+			total += 3
+		}
+	}
+	return 1 - float32(v / float64(total)), nil
 }
 
 func compareSentryTaskImage(tid int32, ti *taskInfo) {
