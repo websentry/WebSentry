@@ -12,6 +12,15 @@ import (
 
 	"github.com/websentry/websentry/middlewares"
 	"github.com/websentry/websentry/models"
+	"path"
+	"github.com/websentry/websentry/config"
+	"github.com/disintegration/imaging"
+	"bytes"
+	"fmt"
+	"math/rand"
+	"strconv"
+	"os"
+	"io/ioutil"
 )
 
 func init() {
@@ -108,6 +117,69 @@ func compareImage(a image.Image, b image.Image) (float32, error) {
 	return 1 - float32(v / float64(total)), nil
 }
 
+func saveImage(b []byte) string {
+
+	// generate file name
+	basePath := path.Join(config.GetFileStoragePath(), "sentry", "image")
+	stime := time.Now().Format("20060102150405")
+	filename := ""
+	fullFilename := ""
+	for {
+		i := rand.Intn(200)
+
+		filename = stime + "-" + strconv.Itoa(i) + ".png"
+		fullFilename = path.Join(basePath, filename)
+		_, err := os.Stat(fullFilename)
+		if os.IsNotExist(err) {
+			break
+		}
+	}
+
+	// save
+	ioutil.WriteFile(fullFilename, b, 0644)
+	return filename
+}
+
 func compareSentryTaskImage(tid int32, ti *taskInfo) {
+	defer func() {
+		// clean up
+		taskq.infoMux.Lock()
+		delete(taskq.info, tid)
+		taskq.infoMux.Unlock()
+	}()
+
+	file := path.Join(config.GetFileStoragePath(), "sentry", "image", ti.baseImage.File)
+
+	a, err1 := imaging.Open(file)
+	b, err2 := imaging.Decode(bytes.NewReader(ti.image))
+
+	if err1!=nil || err2!=nil {
+		// TODO: error handling
+		return
+	}
+
+	v, _ := compareImage(a,b)
+	changed := v < 0.9999
+	imagePath := ""
+	if changed {
+		// changed
+		// TODO: notification
+		fmt.Println(ti.sentryId)
+		fmt.Println("notification")
+
+		// save new image
+		imagePath = saveImage(ti.image)
+
+	}
+
+	s := middlewares.GetDBSession()
+	db := middlewares.SessionToDB(s)
+	err := models.UpdateSentryAfterCheck(db, ti.sentryId, changed, imagePath)
+	s.Close()
+
+	if err==nil && changed {
+		// delete old file
+		//os.Remove(file)
+	}
 
 }

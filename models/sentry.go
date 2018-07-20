@@ -19,6 +19,7 @@ type Sentry struct {
 	NextCheckTime time.Time `bson:"nextCheckTime"`
 	Interval int `bson:"interval"`
 	CheckCount int `bson:"checkCount"`
+	NotifyCount int `bson:"notifyCount"`
 	Version int `bson:"version"`
 	Image SentryImage `bson:"image"`
 	Task map[string]interface{} `bson:"task"`
@@ -55,4 +56,8 @@ func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	}
 
 	return &result
+}
+
+func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, newImage string) error {
+	return nil
 }
