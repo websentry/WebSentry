@@ -27,7 +27,7 @@ type VerificationEmail struct {
 
 var config Config
 
-func Init() {
+func init() {
 	configFile, err := os.Open("config.json")
 	defer configFile.Close()
 	if err != nil {
