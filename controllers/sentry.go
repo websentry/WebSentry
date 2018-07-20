@@ -155,6 +155,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 
 	if err1!=nil || err2!=nil {
 		// TODO: error handling
+		fmt.Println("image error")
 		return
 	}
 
@@ -166,6 +167,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 		// TODO: notification
 		fmt.Println(ti.sentryId)
 		fmt.Println("notification")
+		fmt.Println(v)
 
 		// save new image
 		imagePath = saveImage(ti.image)
@@ -174,12 +176,18 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 
 	s := middlewares.GetDBSession()
 	db := middlewares.SessionToDB(s)
-	err := models.UpdateSentryAfterCheck(db, ti.sentryId, changed, imagePath)
+	err := models.UpdateSentryAfterCheck(db, ti.sentryId, changed, imagePath, ti.version)
 	s.Close()
 
-	if err==nil && changed {
-		// delete old file
-		//os.Remove(file)
-	}
+
+	//if changed {
+	//	if err==nil {
+	//		// delete old file
+	//		os.Remove(file)
+	//	} else {
+	//		// delete new file
+	//		os.Remove(imagePath)
+	//	}
+	//}
 
 }

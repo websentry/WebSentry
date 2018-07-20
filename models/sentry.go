@@ -5,6 +5,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"time"
 	"gopkg.in/mgo.v2"
+	"errors"
 )
 
 type SentryImage struct {
@@ -58,6 +59,50 @@ func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	return &result
 }
 
-func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, newImage string) error {
+func getSentryVersionInterval(db *mgo.Database, id bson.ObjectId) (ver int, inter int, err error) {
+	c := db.C("Sentries")
+
+	var result struct{ Version int `bson:"version"`
+						Interval int `bson:"interval"` }
+	err = c.Find(bson.M{"_id": id}).One(&result)
+	if err!=nil {
+		return
+	}
+	ver = result.Version
+	inter = result.Interval
+	return
+}
+
+func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, newImage string, ver int) error {
+
+	ver2, inter, err := getSentryVersionInterval(db, id)
+	if err != nil {
+		return err
+	}
+
+	if ver2!=ver {
+		return errors.New("version changed")
+	}
+
+	c := db.C("Sentries")
+	now := time.Now()
+
+	up := bson.M{
+			"$set": bson.M{"lastCheckTime": now,
+							"nextCheckTime": now.Add(time.Minute * time.Duration(inter))},
+			"$inc": bson.M{"checkCount": 1},
+		}
+
+	if changed {
+		up["$inc"].(bson.M)["notifyCount"] = 1
+		up["$set"].(bson.M)["image.time"] = now
+		up["$set"].(bson.M)["image.file"] = newImage
+	}
+
+	err = c.Update(bson.M{"_id": id}, up)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
