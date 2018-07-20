@@ -16,3 +16,6 @@ gin.log
 
 # Ignore configuration
 config.json
+
+# GoLand config
+/.idea
