@@ -9,7 +9,8 @@ import (
 type Config struct {
 	Addr            string          `json:"addr"`
 	Mongodb         Mongodb         `json:"mongodb"`
-	VerificationEmail VerificationEmail `json:"verification_email"`
+	VerificationEmail VerificationEmail
+	FileStoragePath string `json:"fileStoragePath"`
 }
 
 type Mongodb struct {
@@ -51,4 +52,8 @@ func GetMongodbConfig() Mongodb {
 
 func GetVerificationEmailConfig() VerificationEmail {
 	return config.VerificationEmail
+}
+
+func GetFileStoragePath() string {
+	return config.FileStoragePath
 }

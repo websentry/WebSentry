@@ -9,5 +9,6 @@
     "port": 587,
     "email": "example@example.com",
     "password": "password"
-  }
+  },
+  "fileStoragePath": "/example/path"
 }
