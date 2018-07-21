@@ -11,6 +11,7 @@ type Config struct {
 	Mongodb         Mongodb         `json:"mongodb"`
 	VerificationEmail VerificationEmail
 	FileStoragePath string `json:"fileStoragePath"`
+	SlaveKey string `json:"slaveKey"`
 }
 
 type Mongodb struct {
@@ -56,4 +57,8 @@ func GetVerificationEmailConfig() VerificationEmail {
 
 func GetFileStoragePath() string {
 	return config.FileStoragePath
+}
+
+func GetSlaveKey() string {
+	return config.SlaveKey
 }

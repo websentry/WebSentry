@@ -36,6 +36,7 @@ func setupRouter() *gin.Engine {
 
 		// slave
 		slaveGroup := v1.Group("/slave")
+		slaveGroup.Use(middlewares.SlaveAuth)
 		{
 			slaveGroup.POST("/init", controllers.SlaveInit)
 			slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)

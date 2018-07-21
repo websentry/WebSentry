@@ -10,5 +10,6 @@
     "email": "example@example.com",
     "password": "password"
   },
-  "fileStoragePath": "/example/path"
+  "fileStoragePath": "/example/path",
+  "slaveKey": "testkey"
 }
