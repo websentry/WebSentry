@@ -1,4 +1,4 @@
-package controllers
+package utils
 
 import (
 	"bytes"
@@ -21,7 +21,6 @@ var c config.VerificationEmail
 func VerificationEmailInit() {
 	ch = make(chan *gomail.Message, chBuffer)
 	c = config.GetVerificationEmailConfig()
-
 
 	go func() {
 		d := gomail.NewDialer(c.Server, c.Port, c.Email, c.Password)

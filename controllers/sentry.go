@@ -255,6 +255,11 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 	err := models.UpdateSentryAfterCheck(db, ti.sentryId, changed, imagePath, ti.version)
 	s.Close()
 
+	// make it run
+	if err != nil {
+
+	}
+
 
 	if changed {
 		if err==nil {

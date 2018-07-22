@@ -20,11 +20,16 @@ func setupRouter() *gin.Engine {
 	{
 		v1.POST("/get_verification", controllers.UserGetSignUpVerification)
 		v1.POST("/create_user", controllers.UserCreateWithVerification)
+		v1.POST("/log_in", controllers.UserLogIn)
 
 		// user
-		// userGroup := v1.Group("/user")
-		// {
-		// }
+		userGroup := v1.Group("/user")
+		userGroup.Use(middlewares.UserAuthRequired)
+		{
+			userGroup.GET("/info", func(c *gin.Context) {
+				c.JSON(200, "Okay")
+			})
+		}
 
 		// sentry
 		sentryGroup := v1.Group("/sentry")

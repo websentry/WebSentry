@@ -4,12 +4,13 @@
     "url": "localhost",
     "database": "websentry"
   },
-  "verification_email": {
+  "verificationEmail": {
     "server": "your_smtp_server",
     "port": 587,
     "email": "example@example.com",
     "password": "password"
   },
   "fileStoragePath": "/example/path",
-  "slaveKey": "testkey"
+  "slaveKey": "testkey",
+  "tokenSecretKey": "secretkey"
 }

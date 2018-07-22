@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	Addr            string          `json:"addr"`
-	Mongodb         Mongodb         `json:"mongodb"`
-	VerificationEmail VerificationEmail
-	FileStoragePath string `json:"fileStoragePath"`
-	SlaveKey string `json:"slaveKey"`
+	Addr              string            `json:"addr"`
+	Mongodb           Mongodb           `json:"mongodb"`
+	VerificationEmail VerificationEmail `json:"verificationEmail"`
+	FileStoragePath   string            `json:"fileStoragePath"`
+	SlaveKey          string            `json:"slaveKey"`
+	TokenSecretKey    string            `json:"tokenSecretKey"`
 }
 
 type Mongodb struct {
@@ -61,4 +62,8 @@ func GetFileStoragePath() string {
 
 func GetSlaveKey() string {
 	return config.SlaveKey
+}
+
+func GetTokenSecretKey() string {
+	return config.TokenSecretKey
 }

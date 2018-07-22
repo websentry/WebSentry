@@ -8,11 +8,52 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+	"github.com/websentry/websentry/utils"
 )
 
 const (
 	verificationCodeLength = 6
 )
+
+func UserLogIn(c *gin.Context) {
+	gUsername := c.Query("username")
+	gPassword := c.Query("password")
+	db := c.MustGet("mongo").(*mgo.Database)
+
+	// check if the user exists
+	userExist, err := models.CheckUserExistence(db, 0, gUsername)
+	if err != nil {
+		panic(err)
+	}
+	if !userExist {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -3,
+			"msg":  "Record does not exist: sign up required",
+		})
+		return
+	}
+
+	// check password
+	result := models.User{}
+	err = models.GetUserByUsername(db, 0, gUsername, &result)
+	if err != nil {
+		panic(err)
+	}
+
+	if !models.CheckPassword(gPassword, result.Password) {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter: incorrect username/password",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":  0,
+		"msg":   "OK",
+		"token": utils.TokenGenerate(result.Id.Hex()),
+	})
+}
 
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
@@ -27,7 +68,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userAlreadyExist {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -2,
-			"msg":  "Wrongn parameter: User already exists",
+			"msg":  "Wrong parameter: User already exists",
 		})
 		return
 	}
@@ -46,7 +87,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userVerificationExist {
 		// fetched verification code before
 		result := models.UserVerification{}
-		err = models.GetUser(db, 1, gUsername, &result)
+		err = models.GetUserByUsername(db, 1, gUsername, &result)
 		if err != nil {
 			panic(err)
 		}
@@ -68,7 +109,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	SendVerificationEmail(gUsername, verificationCode)
+	utils.SendVerificationEmail(gUsername, verificationCode)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -80,7 +121,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 func UserCreateWithVerification(c *gin.Context) {
 	gUsername := c.Query("username")
 	gPassword := c.Query("password")
-	gVerificationCode := c.Query("verificationcode")
+	gVerificationCode := c.Query("verification")
 
 	db := c.MustGet("mongo").(*mgo.Database)
 
@@ -114,7 +155,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// check if the verification code is correct
 	result := models.UserVerification{}
-	err = models.GetUser(db, 1, gUsername, &result)
+	err = models.GetUserByUsername(db, 1, gUsername, &result)
 	if err != nil {
 		panic(err)
 	}
