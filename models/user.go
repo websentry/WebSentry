@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	expireTime     = time.Minute * 1
+	expireTime     = time.Minute * 10
 	encryptionCost = 14
 )
 
@@ -22,9 +22,10 @@ type UserVerification struct {
 
 // User : Entry in the actual User table
 type User struct {
-	Username    string    `bson:"username"`
-	Password    string    `bson:"password"`
-	TimeCreated time.Time `bson:"createdAt"`
+	Id          bson.ObjectId `bson:"_id,omitempty"`
+	Username    string        `bson:"username"`
+	Password    string        `bson:"password"`
+	TimeCreated time.Time     `bson:"createdAt"`
 
 	// TODO: task id?
 }
@@ -37,13 +38,13 @@ func CheckUserExistence(db *mgo.Database, dn int, u string) (bool, error) {
 
 	c := GetUserCollection(db, dn)
 	if c == nil {
-		return false, errors.New("Wrong parameter: databse does not exist")
+		return false, errors.New("wrong parameter: database does not exist")
 	}
 
 	count, err := c.Find(bson.M{"username": u}).Count()
 
 	if err != nil {
-		return false, errors.New("Failed to count")
+		return false, errors.New("failed to count")
 	}
 
 	if count == 0 {
@@ -66,13 +67,20 @@ func EnsureUserVerificationsIndex(db *mgo.Database) error {
 	return c.EnsureIndex(index)
 }
 
-// GetUser get the user's information in the desired table
+// GetUserByUsername get the user's information in the desired table
 // it takes a database pointer, a database number:
 // (0: Users, 1: UserVerifications)
 // an username and a struct to store the result
-func GetUser(db *mgo.Database, dn int, u string, result interface{}) error {
+func GetUserByUsername(db *mgo.Database, dn int, u string, result interface{}) error {
 	c := GetUserCollection(db, dn)
 	return c.Find(bson.M{"username": u}).One(result)
+}
+
+// GetUserById get the user's information by his id,
+// it takes a database pointer, a id, and a result structure
+func GetUserById(db *mgo.Database, id bson.ObjectId, result interface{}) error {
+	c := GetUserCollection(db, 0)
+	return c.Find(bson.M{"_id": id}).One(result)
 }
 
 // GetUserCollection gets the collection of the database
