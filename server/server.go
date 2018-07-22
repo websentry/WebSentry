@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/middlewares"
-	"github.com/websentry/WebSentry/utils"
+	"github.com/websentry/websentry/utils"
 )
 
 func Init() {

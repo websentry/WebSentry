@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
-	"github.com/websentry/WebSentry/utils"
+	"github.com/websentry/websentry/utils"
 )
 
 const (
