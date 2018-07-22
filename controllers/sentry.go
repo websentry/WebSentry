@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"os"
 	"io/ioutil"
+	"gopkg.in/mgo.v2/bson"
+	"gopkg.in/mgo.v2"
 )
 
 func init() {
@@ -42,7 +44,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 
 	task := gin.H{
 		"url":      u.String(),
-		"timeout":  20000,
+		"timeout":  40000,
 		"fullPage": true,
 		"viewport": gin.H{
 			"width":    900,
@@ -70,6 +72,80 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 
 func SentryGetFullScreenshot(c *gin.Context) {
 	getFullScreenshot(c)
+}
+
+func SentryCreate(c *gin.Context) {
+	u, err := url.ParseRequestURI(c.Query("url"))
+	db := c.MustGet("mongo").(*mgo.Database)
+
+	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+	x, _ := strconv.ParseInt(c.Query("x"), 10, 32)
+	y, _ := strconv.ParseInt(c.Query("y"), 10, 32)
+	width, _ := strconv.ParseInt(c.Query("width"), 10, 32)
+	height, _ := strconv.ParseInt(c.Query("height"), 10, 32)
+
+	if !(x >= 0 && y >= 0 && width > 0 && height > 0) {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+	if width*height > 500*500 {
+		c.JSON(200, gin.H{
+			"code": -11,
+			"msg":  "Area too large",
+		})
+		return
+	}
+
+	s := &models.Sentry{}
+	s.Id = bson.NewObjectId()
+	s.CreateTime = time.Now()
+	s.NextCheckTime = time.Now()
+	s.Interval = 4 * 60 // 4 hours
+	s.CheckCount = 0
+	s.NotifyCount = 0
+	s.Version = 1
+	s.Image.File = ""
+	s.Task = gin.H{
+		"url":      u.String(),
+		"timeout":  40000,
+		"fullPage": false,
+		"clip" : gin.H{
+			"x" : x,
+			"width" : width,
+			"height" : height,
+			"y" : y,
+		},
+		"viewport": gin.H{
+			"width":    900,
+			"isMobile": false,
+		},
+		"output": gin.H{
+			"type": "png",
+		},
+	}
+
+	err = db.C("Sentries").Insert(s)
+	if err!=nil {
+		panic(err)
+	}
+
+	c.JSON(200, gin.H{
+		"code":   0,
+		"msg":    "OK",
+		"sentryId": s.Id.Hex(),
+	})
+
 }
 
 func sentryTaskScheduler() {
@@ -180,14 +256,14 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 	s.Close()
 
 
-	//if changed {
-	//	if err==nil {
-	//		// delete old file
-	//		os.Remove(file)
-	//	} else {
-	//		// delete new file
-	//		os.Remove(imagePath)
-	//	}
-	//}
+	if changed {
+		if err==nil {
+			// delete old file
+			os.Remove(file)
+		} else {
+			// delete new file
+			os.Remove(imagePath)
+		}
+	}
 
 }
