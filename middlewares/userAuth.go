@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"gopkg.in/mgo.v2/bson"
-	"github.com/websentry/WebSentry/utils"
+	"github.com/websentry/websentry/utils"
 )
 
 func UserAuthRequired(c *gin.Context) {

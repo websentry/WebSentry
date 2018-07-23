@@ -113,9 +113,9 @@ func SentryCreate(c *gin.Context) {
 	s.NextCheckTime = time.Now()
 	s.Interval = 4 * 60 // 4 hours
 	s.CheckCount = 0
-	s.NotifyCount = 0
+	s.NotifyCount = -1 // will be add 1 at the first check
 	s.Version = 1
-	s.Image.File = ""
+	s.Image.File = "placeholder"
 	s.Task = gin.H{
 		"url":      u.String(),
 		"timeout":  40000,
@@ -224,6 +224,20 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 		taskq.infoMux.Unlock()
 	}()
 
+	if ti.baseImage.File == "placeholder" {
+		// first time
+		imagePath := saveImage(ti.image)
+		s := middlewares.GetDBSession()
+		db := middlewares.SessionToDB(s)
+		err := models.UpdateSentryAfterCheck(db, ti.sentryId, true, imagePath, ti.version)
+		s.Close()
+
+		if err != nil {
+			os.Remove(imagePath)
+		}
+		return
+	}
+
 	file := path.Join(config.GetFileStoragePath(), "sentry", "image", ti.baseImage.File)
 
 	a, err1 := imaging.Open(file)
@@ -254,11 +268,6 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 	db := middlewares.SessionToDB(s)
 	err := models.UpdateSentryAfterCheck(db, ti.sentryId, changed, imagePath, ti.version)
 	s.Close()
-
-	// make it run
-	if err != nil {
-
-	}
 
 
 	if changed {
