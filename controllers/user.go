@@ -9,19 +9,35 @@ import (
 	"net/http"
 	"time"
 	"github.com/websentry/websentry/utils"
-)
+	)
 
 const (
 	verificationCodeLength = 6
 )
 
 func UserLogIn(c *gin.Context) {
-	gUsername := c.Query("username")
-	gPassword := c.Query("password")
+	gEmail := c.DefaultQuery("email", "")
+	gPassword := c.DefaultQuery("password", "")
 	db := c.MustGet("mongo").(*mgo.Database)
 
+	if gEmail == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg": "wrong parameter: Email required",
+		})
+		return
+	}
+
+	if gPassword == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg": "wrong parameter: Password required",
+		})
+		return
+	}
+
 	// check if the user exists
-	userExist, err := models.CheckUserExistence(db, 0, gUsername)
+	userExist, err := models.CheckUserExistence(db, 0, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +51,7 @@ func UserLogIn(c *gin.Context) {
 
 	// check password
 	result := models.User{}
-	err = models.GetUserByUsername(db, 0, gUsername, &result)
+	err = models.GetUserByEmail(db, 0, gEmail, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +59,7 @@ func UserLogIn(c *gin.Context) {
 	if !models.CheckPassword(gPassword, result.Password) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -2,
-			"msg":  "Wrong parameter: incorrect username/password",
+			"msg":  "Wrong parameter: incorrect email/password",
 		})
 		return
 	}
@@ -57,11 +73,20 @@ func UserLogIn(c *gin.Context) {
 
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
-	gUsername := c.Query("username")
+	gEmail := c.DefaultQuery("email", "")
 	db := c.MustGet("mongo").(*mgo.Database)
 
+	// TODO: email check
+	if gEmail == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg": "wrong parameter: Email required",
+		})
+		return
+	}
+
 	// check existence of the user
-	userAlreadyExist, err := models.CheckUserExistence(db, 0, gUsername)
+	userAlreadyExist, err := models.CheckUserExistence(db, 0, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +104,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	var verificationCode string
 
-	userVerificationExist, err := models.CheckUserExistence(db, 1, gUsername)
+	userVerificationExist, err := models.CheckUserExistence(db, 1, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -87,20 +112,20 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userVerificationExist {
 		// fetched verification code before
 		result := models.UserVerification{}
-		err = models.GetUserByUsername(db, 1, gUsername, &result)
+		err = models.GetUserByEmail(db, 1, gEmail, &result)
 		if err != nil {
 			panic(err)
 		}
 
 		verificationCode = result.VerificationCode
 		err = models.GetUserCollection(db, 1).Update(
-			bson.M{"username": gUsername},
+			bson.M{"email": gEmail},
 			bson.M{"$set": bson.M{"createdAt": time.Now()}},
 		)
 	} else {
 		verificationCode = generateVerificationCode()
 		err = models.GetUserCollection(db, 1).Insert(&models.UserVerification{
-			Username:         gUsername,
+			Email:            gEmail,
 			VerificationCode: verificationCode,
 			CreatedAt:        time.Now(),
 		})
@@ -109,7 +134,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	utils.SendVerificationEmail(gUsername, verificationCode)
+	utils.SendVerificationEmail(gEmail, verificationCode)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -119,14 +144,38 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 // UserCreateWithVerification checks verification code and create the user in the user database
 func UserCreateWithVerification(c *gin.Context) {
-	gUsername := c.Query("username")
-	gPassword := c.Query("password")
-	gVerificationCode := c.Query("verification")
+	gEmail := c.DefaultQuery("email", "")
+	gPassword := c.DefaultQuery("password", "")
+	gVerificationCode := c.DefaultQuery("verification", "")
+
+	if gEmail == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg": "wrong parameter: Email required",
+		})
+		return
+	}
+
+	if gPassword == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg": "wrong parameter: Password required",
+		})
+		return
+	}
+
+	if gVerificationCode == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -2,
+			"msg": "wrong parameter: Verification code required",
+		})
+		return
+	}
 
 	db := c.MustGet("mongo").(*mgo.Database)
 
 	// check if it is already in the Users table
-	userExist, err := models.CheckUserExistence(db, 0, gUsername)
+	userExist, err := models.CheckUserExistence(db, 0, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -140,7 +189,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	// check if the user exist in UserVerifications table
-	userVerificationExist, err := models.CheckUserExistence(db, 1, gUsername)
+	userVerificationExist, err := models.CheckUserExistence(db, 1, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -155,7 +204,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// check if the verification code is correct
 	result := models.UserVerification{}
-	err = models.GetUserByUsername(db, 1, gUsername, &result)
+	err = models.GetUserByEmail(db, 1, gEmail, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -174,7 +223,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	err = models.GetUserCollection(db, 0).Insert(&models.User{
-		Username:    gUsername,
+		Email:       gEmail,
 		Password:    hash,
 		TimeCreated: time.Now(),
 	})
