@@ -57,7 +57,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 		},
 	}
 
-	id := addFullScreenshotTask(task)
+	id := addFullScreenshotTask(task, c.MustGet("userId").(bson.ObjectId))
 
 	c.JSON(200, gin.H{
 		"code":   0,
@@ -109,6 +109,7 @@ func SentryCreate(c *gin.Context) {
 
 	s := &models.Sentry{}
 	s.Id = bson.NewObjectId()
+	s.User = c.MustGet("userId").(bson.ObjectId)
 	s.CreateTime = time.Now()
 	s.NextCheckTime = time.Now()
 	s.Interval = 4 * 60 // 4 hours

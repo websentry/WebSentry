@@ -35,6 +35,7 @@ type taskInfo struct {
 	expire time.Time
 
 	// screenshot
+	user bson.ObjectId
 	channel chan bool
 
 	// sentry
@@ -115,13 +116,14 @@ func addSentryTask(s *models.Sentry) int32 {
 	return tid
 }
 
-func addFullScreenshotTask(task gin.H) int32 {
+func addFullScreenshotTask(task gin.H, user bson.ObjectId) int32 {
 	ti := new(taskInfo)
 	ti.task = task
 	ti.mode = TM_FULLSCREEN
 	ti.status = TS_IN_QUEUE
 	ti.expire = time.Now().Add(time.Minute * 1)
 	ti.channel = make(chan bool)
+	ti.user = user
 
 	tid := insertTaskinfo(ti)
 
@@ -272,7 +274,7 @@ func waitFullScreenshot(c *gin.Context) {
 	taskq.infoMux.Lock()
 
 	ti, ok := taskq.info[int32(tid)]
-	if !ok || ti.mode!=TM_FULLSCREEN {
+	if !ok || ti.mode!=TM_FULLSCREEN || ti.user!=c.MustGet("userId") {
 		taskq.infoMux.Unlock()
 		c.JSON(200, gin.H{
 			"code": -3,
@@ -334,7 +336,7 @@ func getFullScreenshot(c *gin.Context) {
 	}
 	taskq.infoMux.Unlock()
 
-	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN {
+	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN || ti.user!=c.MustGet("userId") {
 		c.String(404, "")
 		return
 	}
