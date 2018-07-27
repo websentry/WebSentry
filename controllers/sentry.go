@@ -82,6 +82,24 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
+	if !bson.IsObjectIdHex(c.Query("notification")) {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
+	notification := bson.ObjectIdHex(c.Query("notification"))
+
+	if !models.NotificationCheckOwner(db, notification, c.MustGet("userId").(bson.ObjectId)) {
+		c.JSON(200, gin.H{
+			"code": -2,
+			"msg":  "Wrong parameter",
+		})
+		return
+	}
+
 	x, _ := strconv.ParseInt(c.Query("x"), 10, 32)
 	y, _ := strconv.ParseInt(c.Query("y"), 10, 32)
 	width, _ := strconv.ParseInt(c.Query("width"), 10, 32)
@@ -105,7 +123,9 @@ func SentryCreate(c *gin.Context) {
 
 	s := &models.Sentry{}
 	s.Id = bson.NewObjectId()
+	s.Name = c.Query("name")
 	s.User = c.MustGet("userId").(bson.ObjectId)
+	s.Notification = notification
 	s.CreateTime = time.Now()
 	s.NextCheckTime = time.Now()
 	s.Interval = 4 * 60 // 4 hours
@@ -201,10 +221,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 	imagePath := ""
 	if changed {
 		// changed
-		// TODO: notification
-		fmt.Println(ti.sentryId)
-		fmt.Println("notification")
-		fmt.Println(v)
+		notificationToggle(ti.sentryId, a, b)
 
 		// save new image
 		imagePath = utils.ImageSave(ti.image)

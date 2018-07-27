@@ -222,11 +222,20 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
+	userId := bson.NewObjectId()
+
 	err = models.GetUserCollection(db, 0).Insert(&models.User{
+		Id: 		 userId,
 		Email:       gEmail,
 		Password:    hash,
 		TimeCreated: time.Now(),
 	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = models.NotificationAddEmail(db, userId, gEmail, "--default--")
 
 	if err != nil {
 		panic(err)

@@ -41,6 +41,13 @@ func setupRouter() *gin.Engine {
 			sentryGroup.POST("/create", controllers.SentryCreate)
 		}
 
+		// notification
+		notificationGroup := v1.Group("/notification")
+		notificationGroup.Use(middlewares.UserAuthRequired)
+		{
+			notificationGroup.POST("/list", controllers.NotificationList)
+		}
+
 		// slave
 		slaveGroup := v1.Group("/slave")
 		slaveGroup.Use(middlewares.SlaveAuth)
