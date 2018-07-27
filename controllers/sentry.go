@@ -3,9 +3,6 @@ package controllers
 import (
 	"net/url"
 	"strings"
-	"math"
-	"image"
-	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,12 +14,11 @@ import (
 	"github.com/disintegration/imaging"
 	"bytes"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"os"
-	"io/ioutil"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/mgo.v2"
+	"github.com/websentry/websentry/utils"
 )
 
 func init() {
@@ -167,56 +163,6 @@ func sentryTaskScheduler() {
 	}
 }
 
-func pixelDifference(a uint32, b uint32) float64 {
-	return math.Abs(float64(a)-float64(b)) / 65535.0
-}
-
-func compareImage(a image.Image, b image.Image) (float32, error) {
-	if a.Bounds() != b.Bounds() {
-		return 0, errors.New("images with different size")
-	}
-
-	bounds := a.Bounds()
-	total := 0
-	v := 0.0
-	for i := bounds.Min.X; i < bounds.Max.X; i++ {
-		for j := bounds.Min.Y; j < bounds.Max.Y; j++ {
-
-			ar, ag, ab, _ := a.At(i, j).RGBA()
-			br, bg, bb, _ := b.At(i, j).RGBA()
-			v += pixelDifference(ar, br)
-			v += pixelDifference(ag, bg)
-			v += pixelDifference(ab, bb)
-
-			total += 3
-		}
-	}
-	return 1 - float32(v / float64(total)), nil
-}
-
-func saveImage(b []byte) string {
-
-	// generate file name
-	basePath := path.Join(config.GetFileStoragePath(), "sentry", "image")
-	stime := time.Now().Format("20060102150405")
-	filename := ""
-	fullFilename := ""
-	for {
-		i := rand.Intn(200)
-
-		filename = stime + "-" + strconv.Itoa(i) + ".png"
-		fullFilename = path.Join(basePath, filename)
-		_, err := os.Stat(fullFilename)
-		if os.IsNotExist(err) {
-			break
-		}
-	}
-
-	// save
-	ioutil.WriteFile(fullFilename, b, 0644)
-	return filename
-}
-
 func compareSentryTaskImage(tid int32, ti *taskInfo) {
 	defer func() {
 		// clean up
@@ -227,7 +173,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 
 	if ti.baseImage.File == "placeholder" {
 		// first time
-		imagePath := saveImage(ti.image)
+		imagePath := utils.ImageSave(ti.image)
 		s := middlewares.GetDBSession()
 		db := middlewares.SessionToDB(s)
 		err := models.UpdateSentryAfterCheck(db, ti.sentryId, true, imagePath, ti.version)
@@ -250,7 +196,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 		return
 	}
 
-	v, _ := compareImage(a,b)
+	v, _ := utils.ImageCompare(a,b)
 	changed := v < 0.9999
 	imagePath := ""
 	if changed {
@@ -261,7 +207,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 		fmt.Println(v)
 
 		// save new image
-		imagePath = saveImage(ti.image)
+		imagePath = utils.ImageSave(ti.image)
 
 	}
 
