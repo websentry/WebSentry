@@ -68,6 +68,10 @@ func TokenValidate(t string) (string, error) {
 		return secreteKey, nil
 	})
 
+	if token == nil {
+		return "", ErrorParseToken
+	}
+
 	if token.Valid {
 		if c, ok := token.Claims.(*claim); ok {
 			return c.Id, nil

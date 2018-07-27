@@ -15,7 +15,7 @@ const (
 
 // UserVerification : Entry in the Verification table
 type UserVerification struct {
-	Username         string    `bson:"username"`
+	Email            string    `bson:"email"`
 	VerificationCode string    `bson:"verification"`
 	CreatedAt        time.Time `bson:"createdAt"`
 }
@@ -23,7 +23,7 @@ type UserVerification struct {
 // User : Entry in the actual User table
 type User struct {
 	Id          bson.ObjectId `bson:"_id,omitempty"`
-	Username    string        `bson:"username"`
+	Email       string        `bson:"email"`
 	Password    string        `bson:"password"`
 	TimeCreated time.Time     `bson:"createdAt"`
 
@@ -33,7 +33,7 @@ type User struct {
 // CheckUserExistence finds out whether an user is already existed or not
 // it takes a database pointer, an int represents which database to search for
 // (0: Users, 1: UserVerifications)
-// and a string represents the username
+// and a string represents the email
 func CheckUserExistence(db *mgo.Database, dn int, u string) (bool, error) {
 
 	c := GetUserCollection(db, dn)
@@ -41,7 +41,7 @@ func CheckUserExistence(db *mgo.Database, dn int, u string) (bool, error) {
 		return false, errors.New("wrong parameter: database does not exist")
 	}
 
-	count, err := c.Find(bson.M{"username": u}).Count()
+	count, err := c.Find(bson.M{"email": u}).Count()
 
 	if err != nil {
 		return false, errors.New("failed to count")
@@ -67,13 +67,13 @@ func EnsureUserVerificationsIndex(db *mgo.Database) error {
 	return c.EnsureIndex(index)
 }
 
-// GetUserByUsername get the user's information in the desired table
+// GetUserByEmail get the user's information in the desired table
 // it takes a database pointer, a database number:
 // (0: Users, 1: UserVerifications)
-// an username and a struct to store the result
-func GetUserByUsername(db *mgo.Database, dn int, u string, result interface{}) error {
+// an email and a struct to store the result
+func GetUserByEmail(db *mgo.Database, dn int, u string, result interface{}) error {
 	c := GetUserCollection(db, dn)
-	return c.Find(bson.M{"username": u}).One(result)
+	return c.Find(bson.M{"email": u}).One(result)
 }
 
 // GetUserById get the user's information by his id,
