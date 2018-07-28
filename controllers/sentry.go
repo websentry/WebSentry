@@ -16,6 +16,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/mgo.v2"
 	"github.com/websentry/websentry/utils"
+	"io/ioutil"
 )
 
 func init() {
@@ -161,6 +162,22 @@ func SentryCreate(c *gin.Context) {
 		"sentryId": s.Id.Hex(),
 	})
 
+}
+
+func GetHistoryImage(c *gin.Context) {
+	filename := c.Query("filename")
+	// filename is unsafe
+	if utils.ImageCheckFilename(filename) {
+		filename = utils.ImageGetFullPath(filename, true)
+		fileBytes, err := ioutil.ReadFile(filename)
+		if err!=nil {
+			c.String(404, "")
+		} else {
+			c.Data(200, "image/jpeg", fileBytes)
+		}
+	} else {
+		c.String(404, "")
+	}
 }
 
 func sentryTaskScheduler() {

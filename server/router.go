@@ -58,6 +58,12 @@ func setupRouter() *gin.Engine {
 		}
 
 		// common
+		commonGroup := v1.Group("/common")
+		{
+			commonGroup.GET("/get_history_image", controllers.GetHistoryImage)
+		}
+
+		// common
 		// commonGroup := v1.Group("/common")
 		// {
 		// }
