@@ -5,13 +5,74 @@ import (
 	"image"
 	"path"
 	"github.com/websentry/websentry/config"
-	"time"
 	"math/rand"
-	"strconv"
 	"os"
-	"io/ioutil"
 	"errors"
+	"strings"
+	"github.com/disintegration/imaging"
+	"image/png"
 )
+
+const imageFilenameChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+
+var imageBasePath, imageThumbBasePath string
+
+func init() {
+	imageBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "orig")
+	imageThumbBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "thumb")
+
+	os.MkdirAll(imageBasePath, os.ModePerm)
+	os.MkdirAll(imageThumbBasePath, os.ModePerm)
+}
+
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = imageFilenameChar[rand.Intn(len(imageFilenameChar))]
+	}
+	return string(b)
+}
+
+func ImageRandomFilename() string {
+	var filename string
+
+	for {
+		filename = randStringBytes(32)
+
+		fullFilename := path.Join(imageThumbBasePath, filename + ".jpg")
+		_, err := os.Stat(fullFilename)
+		if os.IsNotExist(err) {
+			break
+		}
+	}
+
+	return filename
+}
+
+func ImageCheckFilename(filename string) bool {
+	for _, char := range filename {
+		if !strings.Contains(imageFilenameChar, string(char)) {
+			return false
+		}
+	}
+	return true
+}
+
+// need check filename if the filename comes from user
+func ImageGetFullPath(filename string, thumb bool) string {
+	if thumb {
+		return path.Join(imageThumbBasePath, filename + ".jpg")
+	} else {
+		return path.Join(imageBasePath, filename + ".png")
+	}
+}
+
+func ImageDelete(filename string, keepThumb bool) {
+	os.Remove(ImageGetFullPath(filename, false))
+	if !keepThumb {
+		os.Remove(ImageGetFullPath(filename, true))
+	}
+}
 
 func pixelDifference(a uint32, b uint32) float64 {
 	return math.Abs(float64(a)-float64(b)) / 65535.0
@@ -40,25 +101,12 @@ func ImageCompare(a image.Image, b image.Image) (float32, error) {
 	return 1 - float32(v / float64(total)), nil
 }
 
-func ImageSave(b []byte) string {
+func ImageSave(image image.Image) string {
+	filename := ImageRandomFilename()
 
-	// generate file name
-	basePath := path.Join(config.GetFileStoragePath(), "sentry", "image")
-	stime := time.Now().Format("20060102150405")
-	filename := ""
-	fullFilename := ""
-	for {
-		i := rand.Intn(200)
+	imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	// thumb
+	imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
 
-		filename = stime + "-" + strconv.Itoa(i) + ".png"
-		fullFilename = path.Join(basePath, filename)
-		_, err := os.Stat(fullFilename)
-		if os.IsNotExist(err) {
-			break
-		}
-	}
-
-	// save
-	ioutil.WriteFile(fullFilename, b, 0644)
 	return filename
 }

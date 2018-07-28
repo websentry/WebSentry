@@ -9,13 +9,10 @@ import (
 
 	"github.com/websentry/websentry/middlewares"
 	"github.com/websentry/websentry/models"
-	"path"
-	"github.com/websentry/websentry/config"
 	"github.com/disintegration/imaging"
 	"bytes"
 	"fmt"
 	"strconv"
-	"os"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/mgo.v2"
 	"github.com/websentry/websentry/utils"
@@ -131,17 +128,16 @@ func SentryCreate(c *gin.Context) {
 	s.Interval = 4 * 60 // 4 hours
 	s.CheckCount = 0
 	s.NotifyCount = -1 // will be add 1 at the first check
-	s.Version = 1
 	s.Image.File = "placeholder"
 	s.Task = gin.H{
 		"url":      u.String(),
 		"timeout":  40000,
 		"fullPage": false,
 		"clip" : gin.H{
-			"x" : x,
-			"width" : width,
-			"height" : height,
-			"y" : y,
+			"x" : int(x),
+			"width" : int(width),
+			"height" : int(height),
+			"y" : int(y),
 		},
 		"viewport": gin.H{
 			"width":    900,
@@ -183,7 +179,7 @@ func sentryTaskScheduler() {
 	}
 }
 
-func compareSentryTaskImage(tid int32, ti *taskInfo) {
+func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 	defer func() {
 		// clean up
 		taskq.infoMux.Lock()
@@ -191,57 +187,66 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) {
 		taskq.infoMux.Unlock()
 	}()
 
+	b, err := imaging.Decode(bytes.NewReader(ti.image))
+	if err!=nil {
+		return err
+	}
+
+	// first time
 	if ti.baseImage.File == "placeholder" {
-		// first time
-		imagePath := utils.ImageSave(ti.image)
+
+		imageFilename := utils.ImageSave(b)
+
 		s := middlewares.GetDBSession()
 		db := middlewares.SessionToDB(s)
-		err := models.UpdateSentryAfterCheck(db, ti.sentryId, true, imagePath, ti.version)
+		err := models.UpdateSentryAfterCheck(db, ti.sentryId, true, imageFilename)
 		s.Close()
 
 		if err != nil {
-			os.Remove(imagePath)
+			utils.ImageDelete(imageFilename, false)
 		}
-		return
+		return err
 	}
 
-	file := path.Join(config.GetFileStoragePath(), "sentry", "image", ti.baseImage.File)
 
-	a, err1 := imaging.Open(file)
-	b, err2 := imaging.Decode(bytes.NewReader(ti.image))
+	a, err := imaging.Open(utils.ImageGetFullPath(ti.baseImage.File, false))
 
-	if err1!=nil || err2!=nil {
+
+	if err!=nil {
 		// TODO: error handling
 		fmt.Println("image error")
-		return
+		return err
 	}
 
 	v, _ := utils.ImageCompare(a,b)
 	changed := v < 0.9999
-	imagePath := ""
+	newImage := ""
 	if changed {
 		// changed
-		notificationToggle(ti.sentryId, a, b)
-
 		// save new image
-		imagePath = utils.ImageSave(ti.image)
-
+		newImage = utils.ImageSave(b)
 	}
 
 	s := middlewares.GetDBSession()
 	db := middlewares.SessionToDB(s)
-	err := models.UpdateSentryAfterCheck(db, ti.sentryId, changed, imagePath, ti.version)
+	err = models.UpdateSentryAfterCheck(db, ti.sentryId, changed, newImage)
 	s.Close()
 
 
 	if changed {
 		if err==nil {
-			// delete old file
-			os.Remove(file)
+			// success
+
+			// notification
+			notificationToggle(ti.sentryId, ti.baseImage.File, newImage)
+
+			// delete old file (keep thumb)
+			utils.ImageDelete(ti.baseImage.File, true)
 		} else {
-			// delete new file
-			os.Remove(imagePath)
+			// delete new file (delete all)
+			utils.ImageDelete(newImage, false)
 		}
 	}
 
+	return err
 }

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"image"
 	"gopkg.in/mgo.v2/bson"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -9,7 +8,7 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-func notificationToggle(sentryId bson.ObjectId, old image.Image, new image.Image) {
+func notificationToggle(sentryId bson.ObjectId, old string, new string) {
 	fmt.Println("Notification")
 	fmt.Println(sentryId)
 }

@@ -5,7 +5,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"time"
 	"gopkg.in/mgo.v2"
-	"errors"
 )
 
 type SentryImage struct {
@@ -24,7 +23,6 @@ type Sentry struct {
 	Interval int `bson:"interval"`
 	CheckCount int `bson:"checkCount"`
 	NotifyCount int `bson:"notifyCount"`
-	Version int `bson:"version"`
 	Image SentryImage `bson:"image"`
 	Task map[string]interface{} `bson:"task"`
 }
@@ -62,30 +60,25 @@ func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	return &result
 }
 
-func getSentryVersionInterval(db *mgo.Database, id bson.ObjectId) (ver int, inter int, err error) {
+func getSentryInterval(db *mgo.Database, id bson.ObjectId) (inter int, err error) {
 	c := db.C("Sentries")
 
-	var result struct{ Version int `bson:"version"`
-						Interval int `bson:"interval"` }
+	var result struct{ Interval int `bson:"interval"` }
 	err = c.Find(bson.M{"_id": id}).One(&result)
 	if err!=nil {
 		return
 	}
-	ver = result.Version
 	inter = result.Interval
 	return
 }
 
-func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, newImage string, ver int) error {
+func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, newImage string) error {
 
-	ver2, inter, err := getSentryVersionInterval(db, id)
+	inter, err := getSentryInterval(db, id)
 	if err != nil {
 		return err
 	}
 
-	if ver2!=ver {
-		return errors.New("version changed")
-	}
 
 	c := db.C("Sentries")
 	now := time.Now()
