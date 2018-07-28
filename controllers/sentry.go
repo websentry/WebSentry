@@ -249,7 +249,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 	s := middlewares.GetDBSession()
 	db := middlewares.SessionToDB(s)
 	err = models.UpdateSentryAfterCheck(db, ti.sentryId, changed, newImage)
-	s.Close()
+	defer s.Close()
 
 
 	if changed {
@@ -257,7 +257,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 			// success
 
 			// notification
-			notificationToggle(ti.sentryId, ti.baseImage.File, newImage)
+			notificationToggle(db, ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
 
 			// delete old file (keep thumb)
 			utils.ImageDelete(ti.baseImage.File, true)

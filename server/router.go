@@ -46,6 +46,7 @@ func setupRouter() *gin.Engine {
 		notificationGroup.Use(middlewares.UserAuthRequired)
 		{
 			notificationGroup.POST("/list", controllers.NotificationList)
+			notificationGroup.POST("/add_serverchan", controllers.NotificationAddServerChan)
 		}
 
 		// slave

@@ -14,6 +14,18 @@ type Notification struct {
 	Setting map[string]interface{} `bson:"setting" json:"setting"`
 }
 
+func GetNotification(db *mgo.Database, id bson.ObjectId) *Notification {
+	c := db.C("Notifications")
+
+	var result Notification
+	err := c.Find(bson.M{"_id": id}).One(&result)
+	if err!=nil {
+		return nil
+	}
+
+	return &result
+}
+
 func NotificationAddEmail(db *mgo.Database, user bson.ObjectId, email string, name string) (err error) {
 	n := &Notification{}
 	n.Name = name
@@ -22,6 +34,22 @@ func NotificationAddEmail(db *mgo.Database, user bson.ObjectId, email string, na
 	n.Setting = gin.H{"email": email}
 
 	err = db.C("Notifications").Insert(n)
+	return
+}
+
+func NotificationAddServerChan(db *mgo.Database, name string, user bson.ObjectId, sckey string) (id bson.ObjectId, err error){
+	n := &Notification{
+		Id: bson.NewObjectId(),
+		Name: name,
+		User: user,
+		Type: "serverchan",
+		Setting: gin.H{"sckey": sckey},
+	}
+
+	err = db.C("Notifications").Insert(n)
+	if err==nil {
+		id = n.Id
+	}
 	return
 }
 
@@ -39,3 +67,6 @@ func NotificationList(db *mgo.Database, user bson.ObjectId) (results []Notificat
 	err = db.C("Notifications").Find(bson.M{"user": user}).All(&results)
 	return
 }
+
+
+

@@ -65,6 +65,30 @@ func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	return &result
 }
 
+func GetSentryName(db *mgo.Database, id bson.ObjectId) (name string, err error) {
+	c := db.C("Sentries")
+
+	var result struct{ Name string `bson:"Name"` }
+	err = c.Find(bson.M{"_id": id}).One(&result)
+	if err!=nil {
+		return
+	}
+	name = result.Name
+	return
+}
+
+func GetSentryNotification(db *mgo.Database, id bson.ObjectId) (nid bson.ObjectId, err error) {
+	c := db.C("Sentries")
+
+	var result struct{ Notification bson.ObjectId `bson:"notification"` }
+	err = c.Find(bson.M{"_id": id}).One(&result)
+	if err!=nil {
+		return
+	}
+	nid = result.Notification
+	return
+}
+
 func getSentryInterval(db *mgo.Database, id bson.ObjectId) (inter int, err error) {
 	c := db.C("Sentries")
 
