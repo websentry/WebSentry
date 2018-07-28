@@ -27,6 +27,11 @@ type Sentry struct {
 	Task map[string]interface{} `bson:"task"`
 }
 
+type ImageHistory struct {
+	Id bson.ObjectId `bson:"_id,omitempty"`
+	Images []SentryImage `bson:"images"`
+}
+
 func GetUncheckedSentry(db *mgo.Database) *Sentry {
 	c := db.C("Sentries")
 
@@ -98,6 +103,14 @@ func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, ne
 	err = c.Update(bson.M{"_id": id}, up)
 	if err != nil {
 		return err
+	}
+
+	if changed {
+		// add history
+		c = db.C("ImageHistories")
+		c.Update(bson.M{"_id": id}, bson.M{
+			"$push": bson.M{"images": &SentryImage{Time:now, File:newImage}},
+		})
 	}
 
 	return nil

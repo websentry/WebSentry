@@ -149,6 +149,8 @@ func SentryCreate(c *gin.Context) {
 	}
 
 	err = db.C("Sentries").Insert(s)
+	db.C("ImageHistories").Insert(&models.ImageHistory{Id: s.Id})
+
 	if err!=nil {
 		panic(err)
 	}
