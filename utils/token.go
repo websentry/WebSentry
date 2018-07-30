@@ -24,8 +24,7 @@ var ErrorParseToken error
 var ErrorParseClaim error
 var ErrorTokenRequired error
 
-// Init generate secret key before hand any request
-func TokenInit() {
+func init() {
 	if secreteKey == nil {
 		secreteKey = []byte(config.GetTokenSecretKey())
 	}

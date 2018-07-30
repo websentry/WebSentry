@@ -17,8 +17,7 @@ const (
 var ch chan *gomail.Message
 var c config.VerificationEmail
 
-// VerificationEmailInit initializes email daemon
-func VerificationEmailInit() {
+func init() {
 	ch = make(chan *gomail.Message, chBuffer)
 	c = config.GetVerificationEmailConfig()
 
