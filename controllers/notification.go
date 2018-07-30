@@ -11,6 +11,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"net/http"
 	"fmt"
+	"github.com/websentry/websentry/config"
 )
 
 func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.Time, old string, new string) error {
@@ -29,8 +30,8 @@ func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.
 			"name": name,
 			"beforeTime": lasttime.Format("2006-01-02 15:04"),
 			"currentTime": time.Now().Format("2006-01-02 15:04"),
-			"beforeImage": "http://127.0.0.1:8080/v1/common/get_history_image?filename="+old,
-			"afterImage": "http://127.0.0.1:8080/v1/common/get_history_image?filename="+new,
+			"beforeImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+old,
+			"afterImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+new,
 		}
 
 		title := name + " has changed"

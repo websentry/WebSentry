@@ -13,6 +13,7 @@ type Config struct {
 	FileStoragePath   string            `json:"fileStoragePath"`
 	SlaveKey          string            `json:"slaveKey"`
 	TokenSecretKey    string            `json:"tokenSecretKey"`
+	BaseUrl			  string			`json:"baseUrl"`
 }
 
 type Mongodb struct {
@@ -66,4 +67,8 @@ func GetSlaveKey() string {
 
 func GetTokenSecretKey() string {
 	return config.TokenSecretKey
+}
+
+func GetBaseUrl() string {
+	return config.BaseUrl
 }
