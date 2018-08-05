@@ -53,6 +53,11 @@ func GetUncheckedSentry(db *mgo.Database) *Sentry {
 	return &result
 }
 
+func GetUserSentries(db *mgo.Database, user bson.ObjectId) (results []Sentry, err error) {
+	err = db.C("Sentries").Find(bson.M{"user": user}).All(&results)
+	return
+}
+
 func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	c := db.C("Sentries")
 

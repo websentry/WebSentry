@@ -39,6 +39,7 @@ func setupRouter() *gin.Engine {
 			sentryGroup.POST("/wait_full_screenshot", controllers.SentryWaitFullScreenshot)
 			sentryGroup.POST("/get_full_screenshot", controllers.SentryGetFullScreenshot)
 			sentryGroup.POST("/create", controllers.SentryCreate)
+			sentryGroup.POST("/list", controllers.SentryList)
 		}
 
 		// notification

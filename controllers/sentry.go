@@ -64,6 +64,36 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 	waitFullScreenshot(c)
 }
 
+func SentryList(c *gin.Context) {
+
+	results, err := models.GetUserSentries(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(bson.ObjectId))
+	if err!=nil {
+		panic(err)
+	}
+
+	sentries := make([]struct{
+		Id bson.ObjectId `json:"id"`
+		Name string `json:"name"`
+		Url string `json:"url"`
+		LastCheckTime time.Time `json:"lastCheckTime"`
+	}, len(results))
+
+
+	for i, _  := range results {
+		sentries[i].Name = results[i].Name
+		sentries[i].Id = results[i].Id
+		sentries[i].Url = results[i].Task["url"].(string)
+		sentries[i].LastCheckTime = results[i].LastCheckTime
+	}
+
+
+	c.JSON(200, gin.H{
+		"code":   0,
+		"msg":    "OK",
+		"sentries": sentries,
+	})
+}
+
 func SentryGetFullScreenshot(c *gin.Context) {
 	getFullScreenshot(c)
 }
