@@ -14,6 +14,7 @@ type Config struct {
 	SlaveKey          string            `json:"slaveKey"`
 	TokenSecretKey    string            `json:"tokenSecretKey"`
 	BaseUrl			  string			`json:"baseUrl"`
+	AccessControlAllowOrigin string     `json:"accessControlAllowOrigin"`
 }
 
 type Mongodb struct {
@@ -71,4 +72,8 @@ func GetTokenSecretKey() string {
 
 func GetBaseUrl() string {
 	return config.BaseUrl
+}
+
+func GetAccessControlAllowOrigin() string {
+	return config.AccessControlAllowOrigin
 }

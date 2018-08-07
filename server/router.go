@@ -11,6 +11,7 @@ func setupRouter() *gin.Engine {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middlewares.MapDb)
+	r.Use(middlewares.Header)
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong")
@@ -37,7 +38,7 @@ func setupRouter() *gin.Engine {
 		{
 			sentryGroup.POST("/request_full_screenshot", controllers.SentryRequestFullScreenshot)
 			sentryGroup.POST("/wait_full_screenshot", controllers.SentryWaitFullScreenshot)
-			sentryGroup.POST("/get_full_screenshot", controllers.SentryGetFullScreenshot)
+			sentryGroup.GET("/get_full_screenshot", controllers.SentryGetFullScreenshot)
 			sentryGroup.POST("/create", controllers.SentryCreate)
 			sentryGroup.POST("/list", controllers.SentryList)
 		}
@@ -65,10 +66,6 @@ func setupRouter() *gin.Engine {
 			commonGroup.GET("/get_history_image", controllers.GetHistoryImage)
 		}
 
-		// common
-		// commonGroup := v1.Group("/common")
-		// {
-		// }
 	}
 
 	return r
