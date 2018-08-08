@@ -16,6 +16,9 @@ https://github.com/websentry/WebSentry-Slave
 
 <small>Icons from [icons8](https://icons8.com/)</small>
 
+## Docker
+Docker images can be found here: https://hub.docker.com/r/websentry/
+
 ## License
 
 Licensed under the [GNU General Public License v3.0](./LICENSE) License.
