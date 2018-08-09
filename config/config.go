@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	ReleaseMode       bool              `json:"releaseMode"`
 	Addr              string            `json:"addr"`
 	Mongodb           Mongodb           `json:"mongodb"`
 	VerificationEmail VerificationEmail `json:"verificationEmail"`
@@ -76,4 +77,8 @@ func GetBaseUrl() string {
 
 func GetAccessControlAllowOrigin() string {
 	return config.AccessControlAllowOrigin
+}
+
+func IsReleaseMode() bool {
+	return config.ReleaseMode
 }
