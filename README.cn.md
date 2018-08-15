@@ -16,6 +16,12 @@ https://github.com/websentry/WebSentry-Slave
 
 <small>Icons from [icons8](https://icons8.com/)</small>
 
+
+## 参与我们
+
+WebSentry 是一个开源项目，我们非常希望你能参与我们。请阅读 [贡献指南](https://github.com/websentry/WebSentry/blob/master/docs/CONTRIBUTING.cn.md) 来了解如何提交建议，报告Bug以及共享代码。
+
+
 ## Docker
 Docker 镜像可从此处获取: https://hub.docker.com/r/websentry/
 

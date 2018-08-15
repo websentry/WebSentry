@@ -16,7 +16,12 @@ https://github.com/websentry/WebSentry-Slave
 
 <small>Icons from [icons8](https://icons8.com/)</small>
 
+## Contributing
+
+WebSentry is open-source and we would love your help building it! Please read the [Contributing Guide](https://github.com/websentry/WebSentry/blob/master/docs/CONTRIBUTING.md) to learn how you can help. You can also follow this guide to report bug / suggest features.
+
 ## Docker
+
 Docker images can be found here: https://hub.docker.com/r/websentry/
 
 ## License
