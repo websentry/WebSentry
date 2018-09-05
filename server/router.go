@@ -27,9 +27,7 @@ func setupRouter() *gin.Engine {
 		userGroup := v1.Group("/user")
 		userGroup.Use(middlewares.UserAuthRequired)
 		{
-			userGroup.GET("/info", func(c *gin.Context) {
-				c.JSON(200, "Okay")
-			})
+			userGroup.POST("/info", controllers.UserInfo)
 		}
 
 		// sentry

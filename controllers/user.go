@@ -15,6 +15,22 @@ const (
 	verificationCodeLength = 6
 )
 
+func UserInfo(c *gin.Context) {
+	db := c.MustGet("mongo").(*mgo.Database)
+	result := models.User{}
+	err := models.GetUserById(db, c.MustGet("userId").(bson.ObjectId), &result)
+	if err != nil {
+		panic(err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":  0,
+		"msg":   "OK",
+		"email": result.Email,
+	})
+	return
+}
+
 func UserLogIn(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 	gPassword := c.DefaultQuery("password", "")
@@ -270,3 +286,4 @@ func generateVerificationCode() string {
 
 	return string(rst)
 }
+
