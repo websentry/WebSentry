@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/websentry/websentry/middlewares"
 	"github.com/websentry/websentry/models"
 	"github.com/disintegration/imaging"
 	"bytes"
@@ -27,10 +26,7 @@ func init() {
 func SentryRequestFullScreenshot(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "Wrong protocol", nil)
 		return
 	}
 
@@ -53,9 +49,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 
 	id := addFullScreenshotTask(task, c.MustGet("userId").(bson.ObjectId))
 
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"taskId": id,
 	})
 }
@@ -87,9 +81,7 @@ func SentryList(c *gin.Context) {
 	}
 
 
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"sentries": sentries,
 	})
 }
@@ -103,28 +95,19 @@ func SentryCreate(c *gin.Context) {
 	db := c.MustGet("mongo").(*mgo.Database)
 
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "Wrong protocol", nil)
 		return
 	}
 
 	if !bson.IsObjectIdHex(c.Query("notification")) {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "Wrong notificationId", nil)
 		return
 	}
 
 	notification := bson.ObjectIdHex(c.Query("notification"))
 
 	if !models.NotificationCheckOwner(db, notification, c.MustGet("userId").(bson.ObjectId)) {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeNotExist, "notification does not exist", nil)
 		return
 	}
 
@@ -134,18 +117,12 @@ func SentryCreate(c *gin.Context) {
 	height, _ := strconv.ParseInt(c.Query("height"), 10, 32)
 
 	if !(x >= 0 && y >= 0 && width > 0 && height > 0) {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "Wrong area", nil)
 		return
 	}
 
 	if width*height > 500*500 {
-		c.JSON(200, gin.H{
-			"code": -11,
-			"msg":  "Area too large",
-		})
+		JsonResponse(c, CodeAreaTooLarge, "", nil)
 		return
 	}
 
@@ -186,12 +163,9 @@ func SentryCreate(c *gin.Context) {
 		panic(err)
 	}
 
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"sentryId": s.Id.Hex(),
 	})
-
 }
 
 func GetHistoryImage(c *gin.Context) {
@@ -214,8 +188,8 @@ func sentryTaskScheduler() {
 	for {
 		time.Sleep(2 * time.Minute)
 
-		s := middlewares.GetDBSession()
-		db := middlewares.SessionToDB(s)
+		s := utils.GetDBSession()
+		db := utils.SessionToDB(s)
 		for {
 			sentry := models.GetUncheckedSentry(db)
 			if sentry == nil {
@@ -246,8 +220,8 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 
 		imageFilename := utils.ImageSave(b)
 
-		s := middlewares.GetDBSession()
-		db := middlewares.SessionToDB(s)
+		s := utils.GetDBSession()
+		db := utils.SessionToDB(s)
 		err := models.UpdateSentryAfterCheck(db, ti.sentryId, true, imageFilename)
 		s.Close()
 
@@ -276,8 +250,8 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 		newImage = utils.ImageSave(b)
 	}
 
-	s := middlewares.GetDBSession()
-	db := middlewares.SessionToDB(s)
+	s := utils.GetDBSession()
+	db := utils.SessionToDB(s)
 	err = models.UpdateSentryAfterCheck(db, ti.sentryId, changed, newImage)
 	defer s.Close()
 

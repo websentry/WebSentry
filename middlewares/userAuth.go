@@ -2,9 +2,9 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/websentry/websentry/controllers"
 	"github.com/websentry/websentry/utils"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func UserAuthRequired(c *gin.Context) {
@@ -13,33 +13,20 @@ func UserAuthRequired(c *gin.Context) {
 	u, err := utils.TokenValidate(t)
 
 	if err != nil {
+		detail := ""
 		switch err {
 		case utils.ErrorParseToken:
-			c.JSON(http.StatusOK, gin.H{
-				"code": -1,
-				"msg":  "Authorization error: Failed to parse the token",
-			})
+			detail = "Failed to parse the token"
 		case utils.ErrorParseClaim:
-			c.JSON(http.StatusOK, gin.H{
-				"code": -1,
-				"msg":  "Authorization error: Failed to parse the claim",
-			})
+			detail = "Failed to parse the claim"
 		case utils.ErrorTokenMalformed:
-			c.JSON(http.StatusOK, gin.H{
-				"code": -1,
-				"msg":  "Authorization error: Token is malformed",
-			})
+			detail = "Token is malformed"
 		case utils.ErrorTokenExpired:
-			c.JSON(http.StatusOK, gin.H{
-				"code": -1,
-				"msg":  "Authorization error: Token is expired",
-			})
+			detail = "Token is expired"
 		case utils.ErrorTokenRequired:
-			c.JSON(http.StatusOK, gin.H{
-				"code": -1,
-				"msg":  "Authorization error: Token is required",
-			})
+			detail = "Token is required"
 		}
+		controllers.JsonResponse(c, controllers.CodeAuthError, detail, nil)
 		c.Abort()
 	} else {
 		if u != "" {
@@ -49,10 +36,7 @@ func UserAuthRequired(c *gin.Context) {
 			c.Set("userId", bsonId)
 			c.Next()
 		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"code": -1,
-				"msg":  "Authorization error: id can not be empty",
-			})
+			controllers.JsonResponse(c, controllers.CodeAuthError, "Uid can not be empty", nil)
 			c.Abort()
 		}
 	}

@@ -1,11 +1,9 @@
-package middlewares
+package utils
 
 import (
-	"log"
-
-	"github.com/gin-gonic/gin"
 	"github.com/websentry/websentry/config"
 	"gopkg.in/mgo.v2"
+	"log"
 )
 
 var session *mgo.Session
@@ -29,12 +27,4 @@ func GetDBSession() *mgo.Session {
 
 func SessionToDB(s *mgo.Session) *mgo.Database {
 	return s.DB(database)
-}
-
-func MapDb(c *gin.Context) {
-	s := GetDBSession()
-	defer s.Close()
-
-	c.Set("mongo", SessionToDB(s))
-	c.Next()
 }

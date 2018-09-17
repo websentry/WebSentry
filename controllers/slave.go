@@ -174,26 +174,19 @@ func getTask() (int32, *taskInfo) {
 }
 
 func SlaveInit(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
-	})
+	JsonResponse(c, CodeOK, "", nil)
 }
 
 func SlaveFetchTask(c *gin.Context) {
 	tid, ti := getTask()
 
 	if tid>=0 {
-		c.JSON(200, gin.H{
-			"code":   0,
-			"msg":    "OK",
+		JsonResponse(c, CodeOK, "", gin.H{
 			"taskId": tid,
 			"task": ti.task,
 		})
 	} else {
-		c.JSON(200, gin.H{
-			"code":   0,
-			"msg":    "OK",
+		JsonResponse(c, CodeOK, "", gin.H{
 			"taskId": -1,
 		})
 	}
@@ -203,21 +196,15 @@ func SlaveSubmitTask(c *gin.Context) {
 	taskq.infoMux.Lock()
 	defer taskq.infoMux.Unlock()
 
-	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
+	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
 	if err!=nil {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "", nil)
 		return
 	}
 
 	ti, ok := taskq.info[int32(tid)]
 	if !ok {
-		c.JSON(200, gin.H{
-			"code": -3,
-			"msg":  "Record not exists",
-		})
+		JsonResponse(c, CodeNotExist, "", nil)
 		return
 	}
 
@@ -230,10 +217,7 @@ func SlaveSubmitTask(c *gin.Context) {
 
 		fileH, err := c.FormFile("image")
 		if err!=nil {
-			c.JSON(200, gin.H{
-				"code": -2,
-				"msg":  "Wrong parameter",
-			})
+			JsonResponse(c, CodeWrongParam, "Image error", nil)
 			return
 		}
 
@@ -251,21 +235,14 @@ func SlaveSubmitTask(c *gin.Context) {
 		go compareSentryTaskImage(int32(tid), ti)
 	}
 
-
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
-	})
+	JsonResponse(c, CodeOK, "", nil)
 }
 
 func waitFullScreenshot(c *gin.Context) {
 
 	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
 	if err!=nil {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "", nil)
 		return
 	}
 
@@ -274,10 +251,7 @@ func waitFullScreenshot(c *gin.Context) {
 	ti, ok := taskq.info[int32(tid)]
 	if !ok || ti.mode!=TM_FULLSCREEN || ti.user!=c.MustGet("userId") {
 		taskq.infoMux.Unlock()
-		c.JSON(200, gin.H{
-			"code": -3,
-			"msg":  "Record not exists",
-		})
+		JsonResponse(c, CodeNotExist, "", nil)
 		return
 	}
 	incomplete := ti.status!= TS_COMPLETE
@@ -294,16 +268,12 @@ func waitFullScreenshot(c *gin.Context) {
 	}
 
 	if timeoutFlag {
-		c.JSON(200, gin.H{
-			"code": 0,
-			"msg":  "OK",
+		JsonResponse(c, CodeOK, "", gin.H{
 			"complete": false,
 		})
 	} else {
 		taskq.infoMux.Lock()
-		c.JSON(200, gin.H{
-			"code": 0,
-			"msg":  "OK",
+		JsonResponse(c, CodeOK, "", gin.H{
 			"complete": true,
 			"feedbackCode": ti.feedbackCode,
 			"feedbackMsg": ti.feedbackMsg,
@@ -314,12 +284,9 @@ func waitFullScreenshot(c *gin.Context) {
 }
 
 func getFullScreenshot(c *gin.Context) {
-	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
+	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
 	if err!=nil {
-		c.JSON(200, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter",
-		})
+		JsonResponse(c, CodeWrongParam, "", nil)
 		return
 	}
 
