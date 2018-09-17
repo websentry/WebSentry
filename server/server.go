@@ -1,13 +1,13 @@
 package server
 
 import (
-	"github.com/websentry/websentry/config"
-	"github.com/websentry/websentry/middlewares"
 	"github.com/gin-gonic/gin"
+	"github.com/websentry/websentry/config"
+	"github.com/websentry/websentry/utils"
 )
 
 func Init() {
-	middlewares.ConnectToDb()
+	utils.ConnectToDb()
 
 	if config.IsReleaseMode() {
 		gin.SetMode(gin.ReleaseMode)

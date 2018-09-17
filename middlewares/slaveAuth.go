@@ -3,6 +3,7 @@ package middlewares
 import (
 	"github.com/websentry/websentry/config"
 	"github.com/gin-gonic/gin"
+	"github.com/websentry/websentry/controllers"
 )
 
 var slaveKey string
@@ -13,10 +14,9 @@ func init() {
 
 func SlaveAuth(c *gin.Context) {
 	if c.Query("key")!=slaveKey {
-		c.JSON(200, gin.H{
-			"code": -1,
-			"msg":  "Authorization error",
-		})
+
+		controllers.JsonResponse(c, controllers.CodeAuthError, "", nil)
+
 		c.Abort()
 		return
 	}

@@ -57,10 +57,7 @@ func NotificationList(c *gin.Context) {
 	if err!=nil {
 		panic(err)
 	}
-
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"notifications": results,
 	})
 }
@@ -76,10 +73,7 @@ func NotificationAddServerChan(c *gin.Context) {
 		panic(err)
 	}
 
-	c.JSON(200, gin.H{
-		"code":   0,
-		"msg":    "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"notificationId": id,
 	})
-
 }

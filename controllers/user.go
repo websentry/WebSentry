@@ -3,13 +3,12 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/websentry/websentry/models"
+	"github.com/websentry/websentry/utils"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
-	"net/http"
 	"time"
-	"github.com/websentry/websentry/utils"
-	)
+)
 
 const (
 	verificationCodeLength = 6
@@ -23,9 +22,7 @@ func UserInfo(c *gin.Context) {
 		panic(err)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":  0,
-		"msg":   "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"email": result.Email,
 	})
 	return
@@ -37,29 +34,20 @@ func UserLogIn(c *gin.Context) {
 	db := c.MustGet("mongo").(*mgo.Database)
 
 	if gEmail == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg": "wrong parameter: Email required",
-		})
+		JsonResponse(c, CodeWrongParam, "Email required", nil)
 		return
 	}
 
 	if gPassword == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg": "wrong parameter: Password required",
-		})
+		JsonResponse(c, CodeWrongParam, "Password required", nil)
 		return
 	}
 
 	// limits login attempts
 	// TODO: add captcha
 	if utils.CheckLogInAvailability(gEmail, c.ClientIP()) == false {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -4,
-			"msg": "exceed limits",
-			"expireDuration": utils.LoginExpireDuration,
-		})
+		JsonResponse(c, CodeExceededLimits, "", nil)
+		// "expireDuration": utils.LoginExpireDuration,
 		return
 	}
 
@@ -69,10 +57,7 @@ func UserLogIn(c *gin.Context) {
 		panic(err)
 	}
 	if !userExist {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -3,
-			"msg":  "Record does not exist: sign up required",
-		})
+		JsonResponse(c, CodeNotExist, "sign up required", nil)
 		return
 	}
 
@@ -84,16 +69,11 @@ func UserLogIn(c *gin.Context) {
 	}
 
 	if !models.CheckPassword(gPassword, result.Password) {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter: incorrect email/password",
-		})
+		JsonResponse(c, CodeAuthError, "incorrect email/password", nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":  0,
-		"msg":   "OK",
+	JsonResponse(c, CodeOK, "", gin.H{
 		"token": utils.TokenGenerate(result.Id.Hex()),
 	})
 }
@@ -105,10 +85,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	// TODO: email check
 	if gEmail == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg": "wrong parameter: Email required",
-		})
+		JsonResponse(c, CodeWrongParam, "Email required", nil)
 		return
 	}
 
@@ -118,10 +95,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		panic(err)
 	}
 	if userAlreadyExist {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter: User already exists",
-		})
+		JsonResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
@@ -163,10 +137,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	utils.SendVerificationEmail(gEmail, verificationCode)
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "OK",
-	})
+	JsonResponse(c, CodeOK, "", nil)
 }
 
 // UserCreateWithVerification checks verification code and create the user in the user database
@@ -176,26 +147,17 @@ func UserCreateWithVerification(c *gin.Context) {
 	gVerificationCode := c.DefaultQuery("verification", "")
 
 	if gEmail == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg": "wrong parameter: Email required",
-		})
+		JsonResponse(c, CodeWrongParam, "Email required", nil)
 		return
 	}
 
 	if gPassword == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg": "wrong parameter: Password required",
-		})
+		JsonResponse(c, CodeWrongParam, "Password required", nil)
 		return
 	}
 
 	if gVerificationCode == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg": "wrong parameter: Verification code required",
-		})
+		JsonResponse(c, CodeWrongParam, "Verification code required", nil)
 		return
 	}
 
@@ -208,10 +170,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	if userExist {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter: user already exists",
-		})
+		JsonResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
@@ -222,10 +181,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	if !userVerificationExist {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -3,
-			"msg":  "Record does not exist",
-		})
+		JsonResponse(c, CodeOK, "", nil)
 		return
 	}
 
@@ -236,10 +192,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 	if result.VerificationCode != gVerificationCode {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -2,
-			"msg":  "Wrong parameter: verification codes do not match",
-		})
+		JsonResponse(c, CodeAuthError, "", nil)
 		return
 	}
 
@@ -268,10 +221,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "OK",
-	})
+	JsonResponse(c, CodeOK, "", nil)
 }
 
 // generateVerificationCode outputs a random 6-digit code
