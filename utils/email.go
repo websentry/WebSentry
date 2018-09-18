@@ -8,7 +8,7 @@ import (
 	"html/template"
 	"strings"
 	"time"
-)
+	)
 
 const (
 	chBuffer = 100
@@ -61,36 +61,45 @@ func init() {
 	}()
 }
 
-// SendVerificationEmail sends email to new user, it
+// SendVerificationEmail sends verification email to new user, it
 // takes an email address and the verification code
 func SendVerificationEmail(e, vc string) {
-	m := gomail.NewMessage()
-	m.SetHeader("From", c.Email)
-	m.SetHeader("To", e)
-	m.SetHeader("Subject", "Verify Your Account on WebSentry")
-	m.SetHeader("MIME-version", "1.0")
-	m.SetBody("text/html", generateVerificationEmailHTML(vc))
 
-	go func() {
-		ch <- m
-	}()
-}
+	// subject
+	var s string
+	if config.IsReleaseMode() {
+		s =  "Verify Your Account on WebSentry"
+	} else {
+		s = "Verify Your Account on WebSentry [dev]"
+	}
 
-func generateVerificationEmailHTML(vc string) string {
+	// apply email templates
 	b := new(bytes.Buffer)
 
-	// gp := os.Getenv("GOPATH")
-	// htmlPath := path.Join(gp, "src/github.com/websentry/websentry/templates/verificationEmail.html")
-
-	t, err := template.ParseFiles("templates/verificationEmail.html")
-
+	t, err := template.ParseFiles("templates/emails/baseEmail.html", "templates/emails/verificationEmail.html")
 	if err != nil {
 		panic(err)
 	}
 
-	if err = t.Execute(b, map[string]string{"verificationCode": vc}); err != nil {
+	if err = t.ExecuteTemplate(b, "base", map[string]string{"verificationCode": vc}); err != nil {
 		panic(err)
 	}
 
-	return b.String()
+	bs := b.String()
+	sendEmail(e, s, &bs)
+}
+
+// sendEmail takes an email address, a subject and a pointer of the body message
+func sendEmail(e, s string, b *string) {
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", c.Email)
+	m.SetHeader("To", e)
+	m.SetHeader("Subject", s)
+	m.SetHeader("MIME-version", "1.0")
+	m.SetBody("text/html", *b)
+
+	go func() {
+		ch <- m
+	}()
 }

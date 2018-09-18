@@ -1,0 +1,24 @@
+{{ define "content"}}
+
+<tr class="content" style="font-size: 14px; line-height: 1.5; text-align: justify">
+    <td style="padding: 20px 40px 20px 40px">
+        Hello,
+        <br>
+        <br>
+        Welcome to
+        <b>Web Sentry</b>! To complete your sign up,
+        please
+        enter the following verification code (expire after 24 hours):
+    </td>
+</tr>
+
+
+<tr class="verification_code" style="text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 5px;">
+    <td>
+        <p>
+        {{ .verificationCode }}
+        </p>
+    </td>
+</tr>
+
+{{ end }}
