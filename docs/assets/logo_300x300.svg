@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="301px" height="300px" viewBox="0 0 301 300" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>300x300</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="25.9980205%" y1="23.6248367%" x2="71.1824271%" y2="95.4455653%" id="linearGradient-1">
+            <stop stop-color="#85D0FF" offset="0%"></stop>
+            <stop stop-color="#3C93F6" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="300x300" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Logo" transform="translate(26.000000, 94.000000)">
+            <g id="Cloud" fill="url(#linearGradient-1)">
+                <path d="M3.89800006,112.500003 C1.40294266,107.47934 0,101.820174 0,95.8333333 C0,75.1226552 16.7893219,58.3333333 37.5,58.3333333 C38.9547824,58.3333333 40.3902164,58.4161734 41.8018422,58.5773938 C53.0542709,24.551559 85.1183069,0 122.916667,0 C150.833585,0 175.62247,13.3926991 191.208878,34.1036516 C194.06291,33.5974348 197.000613,33.3333333 200,33.3333333 C227.614237,33.3333333 250,55.7190958 250,83.3333333 C250,94.2181915 246.521826,104.290679 240.616272,112.5 L3.89798577,112.5 Z" id="Combined-Shape"></path>
+            </g>
+            <g id="Eye" transform="translate(87.500000, 25.000000)">
+                <circle id="Oval" stroke="#FFFFFF" stroke-width="12" cx="33.3333333" cy="33.3333333" r="33.3333333"></circle>
+                <circle id="Oval" fill="#FFFFFF" cx="16.6666667" cy="20.8333333" r="8.33333333"></circle>
+            </g>
+        </g>
+    </g>
+</svg>
