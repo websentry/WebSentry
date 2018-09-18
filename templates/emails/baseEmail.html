@@ -1,10 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
+{{ define "base" }}
+
+<!DOCTYPE html PUBLIC" -//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
-<body>
-$END$
+
+<body style="margin: 0 auto; padding: 0; min-width: 300px; font-family: sans-serif;">
+
+<table style="background-color: #FFFFFF;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15); border: none;">
+
+    <tr class="logo_text" style="font-size: 20px; font-weight: lighter; background-color: #3888E3; height: 60px;">
+        <td style="vertical-align: middle; padding-left: 40px; color: #FFFFFF;">
+            Web Sentry
+        </td>
+    </tr>
+
+{{ template "content" .}}
+
+    <tr class="footer" style="text-align: center; font-size: 12px; height: 60px;">
+        <td style="vertical-align: middle; padding-left: 40px; padding-right: 40px; color: #808080;">
+            Copyright &copy; 2018 WebSentry, All rights reserved.
+        </td>
+    </tr>
+</table>
+
+
 </body>
+
 </html>
+
+{{ end }}

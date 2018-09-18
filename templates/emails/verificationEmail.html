@@ -1,47 +1,24 @@
-<!DOCTYPE html PUBLIC" -//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Verify Your Account on WebSentry</title>
-    </head>
+{{ define "content"}}
 
-    <body style="margin: 0 auto; padding: 0; min-width: 100%; font-family:
-        sans-serif;">
-        <table style="background-color: #FFFFFF;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15);">
-            <tr class="content" style="font-size: 14px; line-height: 1.5; text-align: justify">
-                <td style="padding: 40px 40px 20px 40px">
-                    Hello,
-                    <br>
-                    <br>
-                    Welcome to
-                    <b>WebSentry</b>! To complete your sign up,
-                    please
-                    enter the following verification code (expire after 24 hours):
-                </td>
-            </tr>
+<tr class="content" style="font-size: 14px; line-height: 1.5; text-align: justify">
+    <td style="padding: 20px 40px 20px 40px">
+        Hello,
+        <br>
+        <br>
+        Welcome to
+        <b>Web Sentry</b>! To complete your sign up,
+        please
+        enter the following verification code (expire after 24 hours):
+    </td>
+</tr>
 
 
-            <tr class="verification_code" style="text-align: center;
-                font-size: 22px; font-weight: bold; letter-spacing:
-                5px">
-                <td style="padding: 20px 10px 20px 10px">
-                    <p>
-                        {{ .verificationCode }}
-                    </p>
-                </td>
-            </tr>
+<tr class="verification_code" style="text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 5px;">
+    <td>
+        <p>
+        {{ .verificationCode }}
+        </p>
+    </td>
+</tr>
 
-            <tr class="footer" style="text-align: center; font-size:
-                12px; color: #939393">
-                <td style="padding: 20px 10px 40px 10px">
-                    Copyright &copy; 2018 WebSentry, All rights
-                    reserverd.
-                </td>
-            </tr>
-        </table>
-    </body>
-
-</html>
+{{ end }}
