@@ -1,6 +1,6 @@
 # Web Sentry
 
-![logo_image](docs/assets/github_logo_800x300.jpg?raw=true)
+![logo_image](docs/assets/github_logo_800x200.jpg?raw=true)
 
 [中文版本](./README.cn.md)
 
