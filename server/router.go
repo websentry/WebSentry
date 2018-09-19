@@ -21,7 +21,7 @@ func setupRouter() *gin.Engine {
 	{
 		v1.POST("/get_verification", controllers.UserGetSignUpVerification)
 		v1.POST("/create_user", controllers.UserCreateWithVerification)
-		v1.POST("/log_in", controllers.UserLogIn)
+		v1.POST("/login", controllers.UserLogin)
 
 		// user
 		userGroup := v1.Group("/user")

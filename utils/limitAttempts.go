@@ -28,7 +28,7 @@ func init() {
 
 // CheckLoginAvailability checks if the login username or its ip address
 // excess the limit of attempts
-func CheckLogInAvailability(u, ip string) bool {
+func CheckLoginAvailability(u, ip string) bool {
 	loginC.mux.Lock()
 	defer loginC.mux.Unlock()
 

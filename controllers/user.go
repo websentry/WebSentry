@@ -28,7 +28,7 @@ func UserInfo(c *gin.Context) {
 	return
 }
 
-func UserLogIn(c *gin.Context) {
+func UserLogin(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 	gPassword := c.DefaultQuery("password", "")
 	db := c.MustGet("mongo").(*mgo.Database)
@@ -45,7 +45,7 @@ func UserLogIn(c *gin.Context) {
 
 	// limits login attempts
 	// TODO: add captcha
-	if utils.CheckLogInAvailability(gEmail, c.ClientIP()) == false {
+	if utils.CheckLoginAvailability(gEmail, c.ClientIP()) == false {
 		JsonResponse(c, CodeExceededLimits, "", nil)
 		// "expireDuration": utils.LoginExpireDuration,
 		return
