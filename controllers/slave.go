@@ -240,7 +240,7 @@ func SlaveSubmitTask(c *gin.Context) {
 
 func waitFullScreenshot(c *gin.Context) {
 
-	tid, err := strconv.ParseInt(c.Query("taskid"), 10, 32)
+	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
 	if err!=nil {
 		JsonResponse(c, CodeWrongParam, "", nil)
 		return
