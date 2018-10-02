@@ -34,7 +34,7 @@ func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.
 			"afterImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+new,
 		}
 
-		title := name + " has changed"
+		title := name + ": change detected"
 
 		b := bytes.Buffer{}
 		t, _ := template.ParseFiles("templates/notifications/serverchan.md")
