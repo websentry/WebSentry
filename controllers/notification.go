@@ -1,17 +1,17 @@
 package controllers
 
 import (
-	"time"
 	"bytes"
-	"html/template"
-
-	"gopkg.in/mgo.v2/bson"
-	"github.com/gin-gonic/gin"
-	"github.com/websentry/websentry/models"
-	"gopkg.in/mgo.v2"
-	"net/http"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/websentry/websentry/config"
+	"github.com/websentry/websentry/models"
+	"github.com/websentry/websentry/utils"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+	"html/template"
+	"net/http"
+	"time"
 )
 
 func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.Time, old string, new string) error {
@@ -22,19 +22,19 @@ func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.
 	}
 	n := models.GetNotification(db, nid)
 
+	// TODO: url
+
+	data := map[string]string{
+		"name": name,
+		"beforeTime": lasttime.Format("2006-01-02 15:04"),
+		"currentTime": time.Now().Format("2006-01-02 15:04"),
+		"beforeImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+old,
+		"afterImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+new,
+	}
+
+	title := name + ": change detected"
+
 	if n.Type == "serverchan" {
-
-		// TODO: url
-
-		data := map[string]string{
-			"name": name,
-			"beforeTime": lasttime.Format("2006-01-02 15:04"),
-			"currentTime": time.Now().Format("2006-01-02 15:04"),
-			"beforeImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+old,
-			"afterImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+new,
-		}
-
-		title := name + " has changed"
 
 		b := bytes.Buffer{}
 		t, _ := template.ParseFiles("templates/notifications/serverchan.md")
@@ -46,6 +46,24 @@ func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.
 		http.Get(fmt.Sprintf("https://sc.ftqq.com/%s.send?text=%s&desp=%s", n.Setting["sckey"], title, msg))
 
 		return nil
+	} else if n.Type == "email" {
+
+
+		// apply email templates
+		b := bytes.Buffer{}
+
+		t, err := template.ParseFiles("templates/emails/baseEmail.html", "templates/notifications/email.html")
+		if err != nil {
+			panic(err)
+		}
+
+		if err = t.ExecuteTemplate(&b, "base", data); err != nil {
+			panic(err)
+		}
+
+		bs := b.String()
+		utils.SendEmail(n.Setting["email"].(string), title, &bs)
+
 	}
 
 	return nil

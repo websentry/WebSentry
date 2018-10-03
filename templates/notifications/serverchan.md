@@ -1,4 +1,4 @@
-## {{ .name }} has changed
+## [WebSentry] {{ .name }}: change detected
 
 **Before** (since {{ .beforeTime }})
 

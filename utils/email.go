@@ -47,7 +47,7 @@ func init() {
 					// TODO: log
 				}
 
-				fmt.Println("[INFO]: Verification Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
+				fmt.Println("[INFO]: Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
 
 			case <-time.After(time.Minute):
 				if open {
@@ -67,11 +67,7 @@ func SendVerificationEmail(e, vc string) {
 
 	// subject
 	var s string
-	if config.IsReleaseMode() {
-		s =  "Verify Your Account on WebSentry"
-	} else {
-		s = "Verify Your Account on WebSentry [dev]"
-	}
+	s =  "Verify Your Account on WebSentry"
 
 	// apply email templates
 	b := new(bytes.Buffer)
@@ -86,11 +82,15 @@ func SendVerificationEmail(e, vc string) {
 	}
 
 	bs := b.String()
-	sendEmail(e, s, &bs)
+	SendEmail(e, s, &bs)
 }
 
 // sendEmail takes an email address, a subject and a pointer of the body message
-func sendEmail(e, s string, b *string) {
+func SendEmail(e, s string, b *string) {
+
+	if !config.IsReleaseMode() {
+		s = s + " [dev]"
+	}
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", c.Email)
