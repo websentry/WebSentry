@@ -1,0 +1,34 @@
+{{ define "content"}}
+
+<tr class="content" style="font-size: 14px; line-height: 1.5; text-align: justify">
+    <td style="padding: 20px 40px 20px 40px">
+        Hello,
+        <br>
+        <br>
+        There is a change detected by your sentry: <b>{{ .name }}</b>.
+    </td>
+</tr>
+<tr class="content" style="text-align: center; font-size: 14px; line-height: 1.5">
+    <td style="padding: 20px 40px 20px 40px">
+        <table border="0">
+            <tr>
+                <td style="text-align: center;">
+                    <img style="max-width:60%;" src="{{ .beforeImage }}">
+                    <br />
+                    <b>Before</b>
+                    <br />
+                    <p>{{ .beforeTime }}</p>
+                </td>
+                <td style="text-align: center;">
+                    <img style="max-width:60%;" src="{{ .afterImage }}">
+                    <br />
+                    <b>Current</b>
+                    <br />
+                    <p>{{ .currentTime }}</p>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+{{ end }}

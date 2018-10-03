@@ -47,7 +47,7 @@ func init() {
 					// TODO: log
 				}
 
-				fmt.Println("[INFO]: Verification Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
+				fmt.Println("[INFO]: Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
 
 			case <-time.After(time.Minute):
 				if open {
@@ -82,11 +82,11 @@ func SendVerificationEmail(e, vc string) {
 	}
 
 	bs := b.String()
-	sendEmail(e, s, &bs)
+	SendEmail(e, s, &bs)
 }
 
 // sendEmail takes an email address, a subject and a pointer of the body message
-func sendEmail(e, s string, b *string) {
+func SendEmail(e, s string, b *string) {
 
 	if !config.IsReleaseMode() {
 		s = s + " [dev]"
