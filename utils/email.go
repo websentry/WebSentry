@@ -67,11 +67,7 @@ func SendVerificationEmail(e, vc string) {
 
 	// subject
 	var s string
-	if config.IsReleaseMode() {
-		s =  "Verify Your Account on WebSentry"
-	} else {
-		s = "Verify Your Account on WebSentry [dev]"
-	}
+	s =  "Verify Your Account on WebSentry"
 
 	// apply email templates
 	b := new(bytes.Buffer)
@@ -91,6 +87,10 @@ func SendVerificationEmail(e, vc string) {
 
 // sendEmail takes an email address, a subject and a pointer of the body message
 func sendEmail(e, s string, b *string) {
+
+	if !config.IsReleaseMode() {
+		s = s + " [dev]"
+	}
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", c.Email)
