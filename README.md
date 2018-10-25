@@ -1,5 +1,11 @@
 # Web Sentry
 
+[![GitHub](https://img.shields.io/github/license/websentry/WebSentry.svg)](https://github.com/websentry/WebSentry/blob/master/LICENSE)
+[![GitHub contributors](https://img.shields.io/github/contributors/websentry/WebSentry.svg)](https://github.com/websentry/WebSentry/graphs/contributors)
+[![Build Status](https://travis-ci.com/websentry/WebSentry.svg?branch=master)](https://travis-ci.com/websentry/WebSentry)
+
+
+
 ![logo_image](docs/assets/github_logo_800x200.jpg?raw=true)
 
 [中文版本](./README.cn.md)
