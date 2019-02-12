@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
 	"time"
@@ -15,9 +15,8 @@ const (
 )
 
 func UserInfo(c *gin.Context) {
-	db := c.MustGet("mongo").(*mgo.Database)
 	result := models.User{}
-	err := models.GetUserById(db, c.MustGet("userId").(bson.ObjectId), &result)
+	err := models.GetUserById(c.MustGet("userId").(primitive.ObjectID), &result)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +30,6 @@ func UserInfo(c *gin.Context) {
 func UserLogin(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 	gPassword := c.DefaultQuery("password", "")
-	db := c.MustGet("mongo").(*mgo.Database)
 
 	if gEmail == "" {
 		JsonResponse(c, CodeWrongParam, "Email required", nil)
@@ -52,7 +50,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	// check if the user exists
-	userExist, err := models.CheckUserExistence(db, 0, gEmail)
+	userExist, err := models.CheckUserExistence(0, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +61,7 @@ func UserLogin(c *gin.Context) {
 
 	// check password
 	result := models.User{}
-	err = models.GetUserByEmail(db, 0, gEmail, &result)
+	err = models.GetUserByEmail(0, gEmail, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +79,6 @@ func UserLogin(c *gin.Context) {
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
-	db := c.MustGet("mongo").(*mgo.Database)
 
 	// TODO: email check
 	if gEmail == "" {
@@ -90,7 +87,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	}
 
 	// check existence of the user
-	userAlreadyExist, err := models.CheckUserExistence(db, 0, gEmail)
+	userAlreadyExist, err := models.CheckUserExistence(0, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -99,13 +96,13 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	if err = models.EnsureUserVerificationsIndex(db); err != nil {
+	if err = models.EnsureUserVerificationsIndex(); err != nil {
 		panic(err)
 	}
 
 	var verificationCode string
 
-	userVerificationExist, err := models.CheckUserExistence(db, 1, gEmail)
+	userVerificationExist, err := models.CheckUserExistence(1, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -113,19 +110,19 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userVerificationExist {
 		// fetched verification code before
 		result := models.UserVerification{}
-		err = models.GetUserByEmail(db, 1, gEmail, &result)
+		err = models.GetUserByEmail(1, gEmail, &result)
 		if err != nil {
 			panic(err)
 		}
 
 		verificationCode = result.VerificationCode
-		err = models.GetUserCollection(db, 1).Update(
+		_, err = models.GetUserCollection(1).UpdateOne(nil,
 			bson.M{"email": gEmail},
 			bson.M{"$set": bson.M{"createdAt": time.Now()}},
 		)
 	} else {
 		verificationCode = generateVerificationCode()
-		err = models.GetUserCollection(db, 1).Insert(&models.UserVerification{
+		_, err = models.GetUserCollection(1).InsertOne(nil, &models.UserVerification{
 			Email:            gEmail,
 			VerificationCode: verificationCode,
 			CreatedAt:        time.Now(),
@@ -161,10 +158,8 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	db := c.MustGet("mongo").(*mgo.Database)
-
 	// check if it is already in the Users table
-	userExist, err := models.CheckUserExistence(db, 0, gEmail)
+	userExist, err := models.CheckUserExistence(0, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -175,7 +170,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	// check if the user exist in UserVerifications table
-	userVerificationExist, err := models.CheckUserExistence(db, 1, gEmail)
+	userVerificationExist, err := models.CheckUserExistence(1, gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +182,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// check if the verification code is correct
 	result := models.UserVerification{}
-	err = models.GetUserByEmail(db, 1, gEmail, &result)
+	err = models.GetUserByEmail(1, gEmail, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -202,9 +197,9 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	userId := bson.NewObjectId()
+	userId := primitive.NewObjectID()
 
-	err = models.GetUserCollection(db, 0).Insert(&models.User{
+	_, err = models.GetUserCollection(0).InsertOne(nil, &models.User{
 		Id: 		 userId,
 		Email:       gEmail,
 		Password:    hash,
@@ -215,7 +210,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	err = models.NotificationAddEmail(db, userId, gEmail, "--default--")
+	err = models.NotificationAddEmail(userId, gEmail, "--default--")
 
 	if err != nil {
 		panic(err)

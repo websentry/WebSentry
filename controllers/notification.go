@@ -4,23 +4,23 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"html/template"
 	"net/http"
 	"time"
 )
 
-func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.Time, old string, new string) error {
+func notificationToggle(db *mgo.Database, sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
 	nid, err := models.GetSentryNotification(db, sentryId)
 	name, _ := models.GetSentryName(db, sentryId)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
-	n := models.GetNotification(db, nid)
+	n := models.GetNotification(nid)
 
 	// TODO: url
 
@@ -71,7 +71,7 @@ func notificationToggle(db *mgo.Database, sentryId bson.ObjectId, lasttime time.
 
 
 func NotificationList(c *gin.Context) {
-	results, err := models.NotificationList(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(bson.ObjectId))
+	results, err := models.NotificationList(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(primitive.ObjectID))
 	if err!=nil {
 		panic(err)
 	}
@@ -82,10 +82,10 @@ func NotificationList(c *gin.Context) {
 
 func NotificationAddServerChan(c *gin.Context) {
 	name := c.Query("name")
-	user := c.MustGet("userId").(bson.ObjectId)
+	user := c.MustGet("userId").(primitive.ObjectID)
 	sckey := c.Query("sckey")
 
-	id, err := models.NotificationAddServerChan(c.MustGet("mongo").(*mgo.Database), name, user, sckey)
+	id, err := models.NotificationAddServerChan(name, user, sckey)
 
 	if err!=nil {
 		panic(err)

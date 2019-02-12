@@ -1,10 +1,10 @@
 package models
 
 import (
-
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
-	"gopkg.in/mgo.v2"
 )
 
 type SentryImage struct {
@@ -13,10 +13,10 @@ type SentryImage struct {
 }
 
 type Sentry struct {
-	Id bson.ObjectId `bson:"_id,omitempty"`
+	Id primitive.ObjectID `bson:"_id,omitempty"`
 	Name string `bson:"Name"`
-	User bson.ObjectId `bson:"user"`
-	Notification bson.ObjectId `bson:"notification"`
+	User primitive.ObjectID `bson:"user"`
+	Notification primitive.ObjectID `bson:"notification"`
 	CreateTime time.Time `bson:"createTime"`
 	LastCheckTime time.Time `bson:"lastCheckTime"`
 	NextCheckTime time.Time `bson:"nextCheckTime"`
@@ -28,7 +28,7 @@ type Sentry struct {
 }
 
 type ImageHistory struct {
-	Id bson.ObjectId `bson:"_id,omitempty"`
+	Id primitive.ObjectID `bson:"_id,omitempty"`
 	Images []SentryImage `bson:"images"`
 }
 
@@ -53,12 +53,12 @@ func GetUncheckedSentry(db *mgo.Database) *Sentry {
 	return &result
 }
 
-func GetUserSentries(db *mgo.Database, user bson.ObjectId) (results []Sentry, err error) {
+func GetUserSentries(db *mgo.Database, user primitive.ObjectID) (results []Sentry, err error) {
 	err = db.C("Sentries").Find(bson.M{"user": user}).All(&results)
 	return
 }
 
-func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
+func GetSentry(db *mgo.Database, id primitive.ObjectID) *Sentry {
 	c := db.C("Sentries")
 
 	var result Sentry
@@ -70,7 +70,7 @@ func GetSentry(db *mgo.Database, id bson.ObjectId) *Sentry {
 	return &result
 }
 
-func GetSentryName(db *mgo.Database, id bson.ObjectId) (name string, err error) {
+func GetSentryName(db *mgo.Database, id primitive.ObjectID) (name string, err error) {
 	c := db.C("Sentries")
 
 	var result struct{ Name string `bson:"Name"` }
@@ -82,10 +82,10 @@ func GetSentryName(db *mgo.Database, id bson.ObjectId) (name string, err error) 
 	return
 }
 
-func GetSentryNotification(db *mgo.Database, id bson.ObjectId) (nid bson.ObjectId, err error) {
+func GetSentryNotification(db *mgo.Database, id primitive.ObjectID) (nid primitive.ObjectID, err error) {
 	c := db.C("Sentries")
 
-	var result struct{ Notification bson.ObjectId `bson:"notification"` }
+	var result struct{ Notification primitive.ObjectID `bson:"notification"` }
 	err = c.Find(bson.M{"_id": id}).One(&result)
 	if err!=nil {
 		return
@@ -94,7 +94,7 @@ func GetSentryNotification(db *mgo.Database, id bson.ObjectId) (nid bson.ObjectI
 	return
 }
 
-func getSentryInterval(db *mgo.Database, id bson.ObjectId) (inter int, err error) {
+func getSentryInterval(db *mgo.Database, id primitive.ObjectID) (inter int, err error) {
 	c := db.C("Sentries")
 
 	var result struct{ Interval int `bson:"interval"` }
@@ -106,7 +106,7 @@ func getSentryInterval(db *mgo.Database, id bson.ObjectId) (inter int, err error
 	return
 }
 
-func UpdateSentryAfterCheck(db *mgo.Database, id bson.ObjectId, changed bool, newImage string) error {
+func UpdateSentryAfterCheck(db *mgo.Database, id primitive.ObjectID, changed bool, newImage string) error {
 
 	inter, err := getSentryInterval(db, id)
 	if err != nil {

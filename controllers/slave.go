@@ -1,14 +1,14 @@
 package controllers
 
 import (
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
+	"io/ioutil"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
-	"io/ioutil"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/mgo.v2/bson"
 	"github.com/websentry/websentry/models"
 )
 
@@ -35,11 +35,11 @@ type taskInfo struct {
 	expire time.Time
 
 	// screenshot
-	user bson.ObjectId
+	user primitive.ObjectID
 	channel chan bool
 
 	// sentry
-	sentryId bson.ObjectId
+	sentryId primitive.ObjectID
 	baseImage *models.SentryImage
 }
 
@@ -114,7 +114,7 @@ func addSentryTask(s *models.Sentry) int32 {
 	return tid
 }
 
-func addFullScreenshotTask(task gin.H, user bson.ObjectId) int32 {
+func addFullScreenshotTask(task gin.H, user primitive.ObjectID) int32 {
 	ti := new(taskInfo)
 	ti.task = task
 	ti.mode = TM_FULLSCREEN

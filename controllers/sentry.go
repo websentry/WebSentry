@@ -1,21 +1,19 @@
 package controllers
 
 import (
-	"net/url"
-	"strings"
-	"time"
-
-	"github.com/gin-gonic/gin"
-
-	"github.com/websentry/websentry/models"
-	"github.com/disintegration/imaging"
 	"bytes"
 	"fmt"
-	"strconv"
-	"gopkg.in/mgo.v2/bson"
-	"gopkg.in/mgo.v2"
+	"github.com/disintegration/imaging"
+	"github.com/gin-gonic/gin"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
+	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
+	"gopkg.in/mgo.v2"
 	"io/ioutil"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func init() {
@@ -47,7 +45,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 		},
 	}
 
-	id := addFullScreenshotTask(task, c.MustGet("userId").(bson.ObjectId))
+	id := addFullScreenshotTask(task, c.MustGet("userId").(primitive.ObjectID))
 
 	JsonResponse(c, CodeOK, "", gin.H{
 		"taskId": id,
@@ -60,13 +58,13 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 
 func SentryList(c *gin.Context) {
 
-	results, err := models.GetUserSentries(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(bson.ObjectId))
+	results, err := models.GetUserSentries(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(primitive.ObjectID))
 	if err!=nil {
 		panic(err)
 	}
 
 	sentries := make([]struct{
-		Id bson.ObjectId `json:"id"`
+		Id primitive.ObjectID `json:"id"`
 		Name string `json:"name"`
 		Url string `json:"url"`
 		LastCheckTime time.Time `json:"lastCheckTime"`
@@ -99,14 +97,14 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
-	if !bson.IsObjectIdHex(c.Query("notification")) {
+	notification, err := primitive.ObjectIDFromHex(c.Query("notification"))
+
+	if err != nil {
 		JsonResponse(c, CodeWrongParam, "Wrong notificationId", nil)
 		return
 	}
 
-	notification := bson.ObjectIdHex(c.Query("notification"))
-
-	if !models.NotificationCheckOwner(db, notification, c.MustGet("userId").(bson.ObjectId)) {
+	if !models.NotificationCheckOwner(db, notification, c.MustGet("userId").(primitive.ObjectID)) {
 		JsonResponse(c, CodeNotExist, "notification does not exist", nil)
 		return
 	}
@@ -127,9 +125,9 @@ func SentryCreate(c *gin.Context) {
 	}
 
 	s := &models.Sentry{}
-	s.Id = bson.NewObjectId()
+	s.Id = primitive.NewObjectID()
 	s.Name = c.Query("name")
-	s.User = c.MustGet("userId").(bson.ObjectId)
+	s.User = c.MustGet("userId").(primitive.ObjectID)
 	s.Notification = notification
 	s.CreateTime = time.Now()
 	s.NextCheckTime = time.Now()
