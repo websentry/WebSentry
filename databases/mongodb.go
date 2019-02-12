@@ -5,16 +5,13 @@ import (
 	"github.com/websentry/websentry/config"
 )
 
-var MongoDB *mongo.Database
-
-func ConnectToMongoDB(dbConfig config.Mongodb) error {
+func ConnectToMongoDB(dbConfig config.Mongodb) (*mongo.Database, error) {
 	client, err := mongo.Connect(nil, dbConfig.Url)
-	if err != nil { return err }
+	if err != nil { return nil, err }
 
 	// test connection
 	err = client.Ping(nil, nil)
-	if err != nil { return err }
+	if err != nil { return nil, err }
 
-	MongoDB = client.Database(dbConfig.Database)
-	return nil
+	return client.Database(dbConfig.Database), nil
 }
