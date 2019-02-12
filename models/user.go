@@ -2,9 +2,10 @@ package models
 
 import (
 	"errors"
+	"github.com/mongodb/mongo-go-driver/bson"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
+	"github.com/mongodb/mongo-go-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"time"
 )
 
@@ -22,7 +23,7 @@ type UserVerification struct {
 
 // User : Entry in the actual User table
 type User struct {
-	Id          bson.ObjectId `bson:"_id,omitempty"`
+	Id          primitive.ObjectID `bson:"_id,omitempty"`
 	Email       string        `bson:"email"`
 	Password    string        `bson:"password"`
 	TimeCreated time.Time     `bson:"createdAt"`
@@ -31,17 +32,17 @@ type User struct {
 }
 
 // CheckUserExistence finds out whether an user is already existed or not
-// it takes a database pointer, an int represents which database to search for
+// it takes an int represents which databases to search for
 // (0: Users, 1: UserVerifications)
 // and a string represents the email
-func CheckUserExistence(db *mgo.Database, dn int, u string) (bool, error) {
+func CheckUserExistence(dn int, u string) (bool, error) {
 
-	c := GetUserCollection(db, dn)
+	c := GetUserCollection(dn)
 	if c == nil {
-		return false, errors.New("wrong parameter: database does not exist")
+		return false, errors.New("wrong parameter: databases does not exist")
 	}
 
-	count, err := c.Find(bson.M{"email": u}).Count()
+	count, err := c.Count(nil, bson.M{"email": u})
 
 	if err != nil {
 		return false, errors.New("failed to count")
@@ -55,45 +56,55 @@ func CheckUserExistence(db *mgo.Database, dn int, u string) (bool, error) {
 }
 
 // EnsureUserVerificationsIndex ensures the indecies of UserVerifications table are created
-func EnsureUserVerificationsIndex(db *mgo.Database) error {
-	c := GetUserCollection(db, 1)
+func EnsureUserVerificationsIndex() error {
+	//TODO: waiting for reply from official google group
+
+	// c := GetUserCollection(1)
 
 	// set TTL
-	index := mgo.Index{
-		Key:         []string{"createdAt"},
-		ExpireAfter: expireTime,
-	}
+	//index := mgo.Index{
+	//	Key:         []string{"createdAt"},
+	//	ExpireAfter: expireTime,
+	//}
+	//index := mongo.IndexModel{
+	//	Keys: bson.M{
+	//		"createdAt": 1,
+	//	},
+	//	Options: mongo.NewIndexOptionsBuilder().ExpireAfterSeconds(expireTime).Build(),
+	//}
 
-	return c.EnsureIndex(index)
+	//_, err := c.Indexes().CreateOne(nil, index)
+
+	return nil
 }
 
 // GetUserByEmail get the user's information in the desired table
-// it takes a database pointer, a database number:
+// it takes a databases number:
 // (0: Users, 1: UserVerifications)
 // an email and a struct to store the result
-func GetUserByEmail(db *mgo.Database, dn int, u string, result interface{}) error {
-	c := GetUserCollection(db, dn)
-	return c.Find(bson.M{"email": u}).One(result)
+func GetUserByEmail(dn int, u string, result interface{}) error {
+	c := GetUserCollection(dn)
+	return c.FindOne(nil, bson.M{"email": u}).Decode(result)
 }
 
 // GetUserById get the user's information by his id,
-// it takes a database pointer, a id, and a result structure
-func GetUserById(db *mgo.Database, id bson.ObjectId, result interface{}) error {
-	c := GetUserCollection(db, 0)
-	return c.Find(bson.M{"_id": id}).One(result)
+// it takes a id, and a result structure
+func GetUserById(id primitive.ObjectID, result interface{}) error {
+	c := GetUserCollection(0)
+	return c.FindOne(nil, bson.M{"_id": id}).Decode(result)
 }
 
-// GetUserCollection gets the collection of the database
-// it takes a database pointer and a database number:
+// GetUserCollection gets the collection of the databases
+// it takes a databases pointer and a databases number:
 // (0: Users, 1: UserVerifications)
-func GetUserCollection(db *mgo.Database, dn int) *mgo.Collection {
-	var c *mgo.Collection
+func GetUserCollection(dn int) *mongo.Collection {
+	var c *mongo.Collection
 
 	switch dn {
 	case 0:
-		c = db.C("Users")
+		c = mongoDB.Collection("Users")
 	case 1:
-		c = db.C("UserVerifications")
+		c = mongoDB.Collection("UserVerifications")
 	default:
 		c = nil
 	}

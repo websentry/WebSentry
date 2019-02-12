@@ -2,9 +2,9 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/websentry/websentry/controllers"
 	"github.com/websentry/websentry/utils"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func UserAuthRequired(c *gin.Context) {
@@ -31,7 +31,11 @@ func UserAuthRequired(c *gin.Context) {
 	} else {
 		if u != "" {
 			// success
-			bsonId := bson.ObjectIdHex(u)
+			bsonId, err := primitive.ObjectIDFromHex(u)
+			if err != nil {
+				controllers.JsonResponse(c, controllers.CodeAuthError, "Uid is invalid", nil)
+				c.Abort()
+			}
 
 			c.Set("userId", bsonId)
 			c.Next()

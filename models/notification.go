@@ -1,60 +1,61 @@
 package models
 
 import (
-	"gopkg.in/mgo.v2/bson"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Notification struct {
-	Id bson.ObjectId `bson:"_id,omitempty" json:"_id"`
+	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	Name string `bson:"name" json:"name"`
-	User bson.ObjectId `bson:"user" json:"-"`
+	User primitive.ObjectID `bson:"user" json:"-"`
 	Type string `bson:"type" json:"type"`
 	Setting map[string]interface{} `bson:"setting" json:"setting"`
 }
 
-func GetNotification(db *mgo.Database, id bson.ObjectId) *Notification {
-	c := db.C("Notifications")
+func GetNotification(id primitive.ObjectID) *Notification {
+	c := mongoDB.Collection("Notifications")
 
 	var result Notification
-	err := c.Find(bson.M{"_id": id}).One(&result)
-	if err!=nil {
+	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	if err != nil {
 		return nil
 	}
 
 	return &result
 }
 
-func NotificationAddEmail(db *mgo.Database, user bson.ObjectId, email string, name string) (err error) {
+func NotificationAddEmail(user primitive.ObjectID, email string, name string) (err error) {
 	n := &Notification{}
 	n.Name = name
 	n.User = user
 	n.Type = "email"
 	n.Setting = gin.H{"email": email}
 
-	err = db.C("Notifications").Insert(n)
+	_, err = mongoDB.Collection("Notifications").InsertOne(nil, n)
 	return
 }
 
-func NotificationAddServerChan(db *mgo.Database, name string, user bson.ObjectId, sckey string) (id bson.ObjectId, err error){
+func NotificationAddServerChan(name string, user primitive.ObjectID, sckey string) (id primitive.ObjectID, err error){
 	n := &Notification{
-		Id: bson.NewObjectId(),
+		Id: primitive.NewObjectID(),
 		Name: name,
 		User: user,
 		Type: "serverchan",
 		Setting: gin.H{"sckey": sckey},
 	}
 
-	err = db.C("Notifications").Insert(n)
-	if err==nil {
+	_, err = mongoDB.Collection("Notifications").InsertOne(nil, n)
+	if err == nil {
 		id = n.Id
 	}
 	return
 }
 
-func NotificationCheckOwner(db *mgo.Database, id bson.ObjectId, user bson.ObjectId) bool {
-	var result struct{ User bson.ObjectId `bson:"user"` }
+func NotificationCheckOwner(db *mgo.Database, id primitive.ObjectID, user primitive.ObjectID) bool {
+	var result struct{ User primitive.ObjectID `bson:"user"` }
 
 	err := db.C("Notifications").Find(bson.M{"_id": id}).One(&result)
 	if err==nil && result.User == user {
@@ -63,7 +64,7 @@ func NotificationCheckOwner(db *mgo.Database, id bson.ObjectId, user bson.Object
 	return false
 }
 
-func NotificationList(db *mgo.Database, user bson.ObjectId) (results []Notification, err error) {
+func NotificationList(db *mgo.Database, user primitive.ObjectID) (results []Notification, err error) {
 	err = db.C("Notifications").Find(bson.M{"user": user}).All(&results)
 	return
 }
