@@ -2,7 +2,7 @@
   "releaseMode": false,
   "addr": "127.0.0.1:8080",
   "mongodb": {
-    "url": "localhost",
+    "url": "mongodb://localhost",
     "database": "websentry"
   },
   "verificationEmail": {
