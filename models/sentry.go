@@ -61,16 +61,15 @@ func GetUserSentries(user primitive.ObjectID) (results []Sentry, err error) {
 	return
 }
 
-//func GetSentry(id primitive.ObjectID) *Sentry {
+//func GetSentry(id primitive.ObjectID) (*Sentry, error) {
 //	c := mongoDB.Collection("Sentries")
 //
 //	var result Sentry
 //	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
-//	if err != nil {
-//		return nil
+//	if err == mongo.ErrNoDocuments {
+//		return nil, nil
 //	}
-//
-//	return &result
+//	return &result, err
 //}
 
 func AddSentry(s *Sentry) error {

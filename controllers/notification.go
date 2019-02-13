@@ -19,8 +19,10 @@ func notificationToggle(sentryId primitive.ObjectID, lasttime time.Time, old str
 	if err != nil {
 		return err
 	}
-	n := models.GetNotification(nid)
-
+	n, err := models.GetNotification(nid)
+	if err != nil {
+		return err
+	}
 	// TODO: url
 
 	data := map[string]string{

@@ -14,16 +14,12 @@ type Notification struct {
 	Setting map[string]interface{} `bson:"setting" json:"setting"`
 }
 
-func GetNotification(id primitive.ObjectID) *Notification {
+func GetNotification(id primitive.ObjectID) (*Notification, error) {
 	c := mongoDB.Collection("Notifications")
 
 	var result Notification
 	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
-	if err != nil {
-		return nil
-	}
-
-	return &result
+	return &result, err
 }
 
 func NotificationAddEmail(user primitive.ObjectID, email string, name string) (err error) {
