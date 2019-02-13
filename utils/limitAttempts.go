@@ -2,9 +2,9 @@ package utils
 
 import (
 	"github.com/patrickmn/go-cache"
-	"time"
 	"sync"
-	)
+	"time"
+)
 
 const (
 	limitLoginUsername = uint(1000)
