@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/websentry/websentry/config"
+	"github.com/websentry/websentry/controllers"
 	"github.com/websentry/websentry/databases"
 	"github.com/websentry/websentry/models"
 	"log"
@@ -15,6 +16,8 @@ func Init() {
 
 	err = models.Init(db)
 	if err != nil { log.Fatal(err) }
+
+	controllers.Init()
 
 	if config.IsReleaseMode() {
 		gin.SetMode(gin.ReleaseMode)

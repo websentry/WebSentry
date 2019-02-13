@@ -15,10 +15,6 @@ import (
 	"time"
 )
 
-func init() {
-	go sentryTaskScheduler()
-}
-
 // [url] the url of the page that needs screenshot
 func SentryRequestFullScreenshot(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
@@ -70,7 +66,7 @@ func SentryList(c *gin.Context) {
 	}, len(results))
 
 
-	for i, _  := range results {
+	for i := range results {
 		sentries[i].Name = results[i].Name
 		sentries[i].Id = results[i].Id
 		sentries[i].Url = results[i].Task["url"].(string)
