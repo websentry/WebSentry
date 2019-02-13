@@ -8,15 +8,14 @@ import (
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
-	"gopkg.in/mgo.v2"
 	"html/template"
 	"net/http"
 	"time"
 )
 
-func notificationToggle(db *mgo.Database, sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
-	nid, err := models.GetSentryNotification(db, sentryId)
-	name, _ := models.GetSentryName(db, sentryId)
+func notificationToggle(sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
+	nid, err := models.GetSentryNotification(sentryId)
+	name, _ := models.GetSentryName(sentryId)
 	if err != nil {
 		return err
 	}
@@ -71,7 +70,7 @@ func notificationToggle(db *mgo.Database, sentryId primitive.ObjectID, lasttime 
 
 
 func NotificationList(c *gin.Context) {
-	results, err := models.NotificationList(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(primitive.ObjectID))
+	results, err := models.NotificationList(c.MustGet("userId").(primitive.ObjectID))
 	if err!=nil {
 		panic(err)
 	}

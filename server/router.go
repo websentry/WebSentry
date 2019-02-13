@@ -10,7 +10,6 @@ func setupRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	r.Use(middlewares.MapDb)
 	r.Use(middlewares.Header)
 
 	r.GET("/ping", func(c *gin.Context) {

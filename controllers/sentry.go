@@ -8,7 +8,6 @@ import (
 	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
-	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"net/url"
 	"strconv"
@@ -58,7 +57,7 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 
 func SentryList(c *gin.Context) {
 
-	results, err := models.GetUserSentries(c.MustGet("mongo").(*mgo.Database), c.MustGet("userId").(primitive.ObjectID))
+	results, err := models.GetUserSentries(c.MustGet("userId").(primitive.ObjectID))
 	if err!=nil {
 		panic(err)
 	}
@@ -90,7 +89,6 @@ func SentryGetFullScreenshot(c *gin.Context) {
 
 func SentryCreate(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
-	db := c.MustGet("mongo").(*mgo.Database)
 
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
 		JsonResponse(c, CodeWrongParam, "Wrong protocol", nil)
@@ -104,7 +102,7 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
-	if !models.NotificationCheckOwner(db, notification, c.MustGet("userId").(primitive.ObjectID)) {
+	if !models.NotificationCheckOwner(notification, c.MustGet("userId").(primitive.ObjectID)) {
 		JsonResponse(c, CodeNotExist, "notification does not exist", nil)
 		return
 	}
@@ -154,10 +152,8 @@ func SentryCreate(c *gin.Context) {
 		},
 	}
 
-	err = db.C("Sentries").Insert(s)
-	db.C("ImageHistories").Insert(&models.ImageHistory{Id: s.Id})
-
-	if err!=nil {
+	err = models.AddSentry(s)
+	if err != nil {
 		panic(err)
 	}
 
@@ -186,17 +182,18 @@ func sentryTaskScheduler() {
 	for {
 		time.Sleep(2 * time.Minute)
 
-		s := utils.GetDBSession()
-		db := utils.SessionToDB(s)
 		for {
-			sentry := models.GetUncheckedSentry(db)
+			sentry, err := models.GetUncheckedSentry()
+			if err != nil {
+				// TODO: log
+				break
+			}
 			if sentry == nil {
 				break
 			}
 			// add task
 			addSentryTask(sentry)
 		}
-		s.Clone()
 	}
 }
 
@@ -218,10 +215,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 
 		imageFilename := utils.ImageSave(b)
 
-		s := utils.GetDBSession()
-		db := utils.SessionToDB(s)
-		err := models.UpdateSentryAfterCheck(db, ti.sentryId, true, imageFilename)
-		s.Close()
+		err := models.UpdateSentryAfterCheck(ti.sentryId, true, imageFilename)
 
 		if err != nil {
 			utils.ImageDelete(imageFilename, false)
@@ -248,18 +242,14 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 		newImage = utils.ImageSave(b)
 	}
 
-	s := utils.GetDBSession()
-	db := utils.SessionToDB(s)
-	err = models.UpdateSentryAfterCheck(db, ti.sentryId, changed, newImage)
-	defer s.Close()
-
+	err = models.UpdateSentryAfterCheck(ti.sentryId, changed, newImage)
 
 	if changed {
 		if err==nil {
 			// success
 
 			// notification
-			notificationToggle(db, ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
+			notificationToggle(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
 
 			// delete old file (keep thumb)
 			utils.ImageDelete(ti.baseImage.File, true)

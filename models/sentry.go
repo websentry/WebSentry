@@ -2,7 +2,8 @@ package models
 
 import (
 	"github.com/mongodb/mongo-go-driver/bson/primitive"
-	"gopkg.in/mgo.v2"
+	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/mongo/options"
 	"gopkg.in/mgo.v2/bson"
 	"time"
 )
@@ -32,49 +33,59 @@ type ImageHistory struct {
 	Images []SentryImage `bson:"images"`
 }
 
-func GetUncheckedSentry(db *mgo.Database) *Sentry {
-	c := db.C("Sentries")
+func GetUncheckedSentry() (*Sentry, error) {
+	c := mongoDB.Collection("Sentries")
 
 	now := time.Now()
 
 	// delay selected sentry 10 min
-	change := mgo.Change{
-		Update: bson.M{"$set": bson.M{"nextCheckTime": now.Add(time.Minute * 15)}},
-		ReturnNew: false,
-	}
+	update := bson.M{"$set": bson.M{"nextCheckTime": now.Add(time.Minute * 10)}}
 
 	// execute on a sentry that is due
 	var result Sentry
-	_, err := c.Find(bson.M{"nextCheckTime": bson.M{"$lte": now,},}).Sort("-nextCheckTime").Apply(change, &result)
-	if err!=nil {
-		return nil
-	}
+	filter := bson.M{"nextCheckTime": bson.M{"$lte": now,},}
+	opts := options.FindOneAndUpdate().SetSort(bson.M{"nextCheckTime": 1}).SetReturnDocument(options.Before).SetUpsert(false)
 
-	return &result
+	err := c.FindOneAndUpdate(nil, filter, update, opts).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
+	return &result, err
 }
 
-func GetUserSentries(db *mgo.Database, user primitive.ObjectID) (results []Sentry, err error) {
-	err = db.C("Sentries").Find(bson.M{"user": user}).All(&results)
+func GetUserSentries(user primitive.ObjectID) (results []Sentry, err error) {
+	cur, err := mongoDB.Collection("Sentries").Find(nil, bson.M{"user": user})
+	if err == nil {
+		err = getAllFromCursor(cur, &results)
+	}
 	return
 }
 
-func GetSentry(db *mgo.Database, id primitive.ObjectID) *Sentry {
-	c := db.C("Sentries")
+//func GetSentry(id primitive.ObjectID) *Sentry {
+//	c := mongoDB.Collection("Sentries")
+//
+//	var result Sentry
+//	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+//	if err != nil {
+//		return nil
+//	}
+//
+//	return &result
+//}
 
-	var result Sentry
-	err := c.Find(bson.M{"_id": id}).One(&result)
-	if err!=nil {
-		return nil
-	}
-
-	return &result
+func AddSentry(s *Sentry) error {
+	// insert doc containing "foreign key" first
+	_, err := mongoDB.Collection("ImageHistories").InsertOne(nil, &ImageHistory{Id: s.Id})
+	if err != nil { return err }
+	_, err = mongoDB.Collection("Sentries").InsertOne(nil, s)
+	return err
 }
 
-func GetSentryName(db *mgo.Database, id primitive.ObjectID) (name string, err error) {
-	c := db.C("Sentries")
+func GetSentryName(id primitive.ObjectID) (name string, err error) {
+	c := mongoDB.Collection("Sentries")
 
 	var result struct{ Name string `bson:"Name"` }
-	err = c.Find(bson.M{"_id": id}).One(&result)
+	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
 	if err!=nil {
 		return
 	}
@@ -82,11 +93,11 @@ func GetSentryName(db *mgo.Database, id primitive.ObjectID) (name string, err er
 	return
 }
 
-func GetSentryNotification(db *mgo.Database, id primitive.ObjectID) (nid primitive.ObjectID, err error) {
-	c := db.C("Sentries")
+func GetSentryNotification(id primitive.ObjectID) (nid primitive.ObjectID, err error) {
+	c := mongoDB.Collection("Sentries")
 
 	var result struct{ Notification primitive.ObjectID `bson:"notification"` }
-	err = c.Find(bson.M{"_id": id}).One(&result)
+	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
 	if err!=nil {
 		return
 	}
@@ -94,27 +105,27 @@ func GetSentryNotification(db *mgo.Database, id primitive.ObjectID) (nid primiti
 	return
 }
 
-func getSentryInterval(db *mgo.Database, id primitive.ObjectID) (inter int, err error) {
-	c := db.C("Sentries")
+func getSentryInterval(id primitive.ObjectID) (inter int, err error) {
+	c := mongoDB.Collection("Sentries")
 
 	var result struct{ Interval int `bson:"interval"` }
-	err = c.Find(bson.M{"_id": id}).One(&result)
-	if err!=nil {
+	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	if err != nil {
 		return
 	}
 	inter = result.Interval
 	return
 }
 
-func UpdateSentryAfterCheck(db *mgo.Database, id primitive.ObjectID, changed bool, newImage string) error {
+func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string) error {
 
-	inter, err := getSentryInterval(db, id)
+	inter, err := getSentryInterval(id)
 	if err != nil {
 		return err
 	}
 
 
-	c := db.C("Sentries")
+	c := mongoDB.Collection("Sentries")
 	now := time.Now()
 
 	up := bson.M{
@@ -124,22 +135,27 @@ func UpdateSentryAfterCheck(db *mgo.Database, id primitive.ObjectID, changed boo
 		}
 
 	if changed {
+		// add history
+		c = mongoDB.Collection("ImageHistories")
+		_, err = c.UpdateOne(nil, bson.M{"_id": id}, bson.M{
+			"$push": bson.M{"images": &SentryImage{Time:now, File:newImage}},
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+
+	if changed {
 		up["$inc"].(bson.M)["notifyCount"] = 1
 		up["$set"].(bson.M)["image.time"] = now
 		up["$set"].(bson.M)["image.file"] = newImage
 	}
 
-	err = c.Update(bson.M{"_id": id}, up)
+	_, err = c.UpdateOne(nil, bson.M{"_id": id}, up)
 	if err != nil {
 		return err
-	}
-
-	if changed {
-		// add history
-		c = db.C("ImageHistories")
-		c.Update(bson.M{"_id": id}, bson.M{
-			"$push": bson.M{"images": &SentryImage{Time:now, File:newImage}},
-		})
 	}
 
 	return nil

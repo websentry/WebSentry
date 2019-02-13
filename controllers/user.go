@@ -199,18 +199,19 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	userId := primitive.NewObjectID()
 
+	// insert doc containing "foreign key" first
+	err = models.NotificationAddEmail(userId, gEmail, "--default--")
+
+	if err != nil {
+		panic(err)
+	}
+
 	_, err = models.GetUserCollection(0).InsertOne(nil, &models.User{
 		Id: 		 userId,
 		Email:       gEmail,
 		Password:    hash,
 		TimeCreated: time.Now(),
 	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = models.NotificationAddEmail(userId, gEmail, "--default--")
 
 	if err != nil {
 		panic(err)

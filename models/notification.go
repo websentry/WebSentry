@@ -1,10 +1,9 @@
 package models
 
 import (
-	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/mongodb/mongo-go-driver/bson"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
 )
 
 type Notification struct {
@@ -54,18 +53,21 @@ func NotificationAddServerChan(name string, user primitive.ObjectID, sckey strin
 	return
 }
 
-func NotificationCheckOwner(db *mgo.Database, id primitive.ObjectID, user primitive.ObjectID) bool {
+func NotificationCheckOwner(id primitive.ObjectID, user primitive.ObjectID) bool {
 	var result struct{ User primitive.ObjectID `bson:"user"` }
 
-	err := db.C("Notifications").Find(bson.M{"_id": id}).One(&result)
+	err := mongoDB.Collection("Notifications").FindOne(nil, bson.M{"_id": id}).Decode(&result)
 	if err==nil && result.User == user {
 		return true
 	}
 	return false
 }
 
-func NotificationList(db *mgo.Database, user primitive.ObjectID) (results []Notification, err error) {
-	err = db.C("Notifications").Find(bson.M{"user": user}).All(&results)
+func NotificationList(user primitive.ObjectID) (results []Notification, err error) {
+	cur, err := mongoDB.Collection("Notifications").Find(nil, bson.M{"user": user})
+	if err == nil {
+		err = getAllFromCursor(cur, &results)
+	}
 	return
 }
 
