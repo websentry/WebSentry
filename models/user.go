@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	expireTime     = time.Minute * 10
 	encryptionCost = 14
 )
 
@@ -53,29 +52,6 @@ func CheckUserExistence(dn int, u string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-// EnsureUserVerificationsIndex ensures the indecies of UserVerifications table are created
-func EnsureUserVerificationsIndex() error {
-	//TODO: waiting for reply from official google group
-
-	// c := GetUserCollection(1)
-
-	// set TTL
-	//index := mgo.Index{
-	//	Key:         []string{"createdAt"},
-	//	ExpireAfter: expireTime,
-	//}
-	//index := mongo.IndexModel{
-	//	Keys: bson.M{
-	//		"createdAt": 1,
-	//	},
-	//	Options: mongo.NewIndexOptionsBuilder().ExpireAfterSeconds(expireTime).Build(),
-	//}
-
-	//_, err := c.Indexes().CreateOne(nil, index)
-
-	return nil
 }
 
 // GetUserByEmail get the user's information in the desired table

@@ -96,10 +96,6 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	if err = models.EnsureUserVerificationsIndex(); err != nil {
-		panic(err)
-	}
-
 	var verificationCode string
 
 	userVerificationExist, err := models.CheckUserExistence(1, gEmail)

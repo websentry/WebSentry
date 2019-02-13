@@ -1,7 +1,10 @@
 package models
 
 import (
+	"context"
+	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/mongo/options"
 	"reflect"
 )
 
@@ -9,7 +12,19 @@ var mongoDB *mongo.Database
 
 func Init(db *mongo.Database) error {
 	mongoDB = db
-	return nil
+
+	// User - UserVerifications - Index
+	const expireTimeInSec = 60 * 10
+	c := GetUserCollection(1)
+	index := mongo.IndexModel{
+		Keys: bson.M{
+			"createdAt": 1,
+		},
+		Options: options.Index().SetExpireAfterSeconds(expireTimeInSec),
+	}
+	_, err := c.Indexes().CreateOne(context.Background(), index)
+
+	return err
 }
 
 // Helper for MongoDB
