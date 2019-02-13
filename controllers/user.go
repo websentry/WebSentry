@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
-	"gopkg.in/mgo.v2/bson"
 	"math/rand"
 	"time"
 )
