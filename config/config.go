@@ -16,6 +16,7 @@ type Config struct {
 	TokenSecretKey    string            `json:"tokenSecretKey"`
 	BaseUrl			  string			`json:"baseUrl"`
 	AccessControlAllowOrigin string     `json:"accessControlAllowOrigin"`
+	ForwardedByClientIP bool			`json:"forwardedByClientIP"`
 }
 
 type Mongodb struct {
@@ -81,4 +82,8 @@ func GetAccessControlAllowOrigin() string {
 
 func IsReleaseMode() bool {
 	return config.ReleaseMode
+}
+
+func IsForwardedByClientIP() bool {
+	return config.ForwardedByClientIP
 }

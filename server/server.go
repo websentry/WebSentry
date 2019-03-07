@@ -24,6 +24,8 @@ func Init() {
 	}
 
 	r := setupRouter()
+
+	r.ForwardedByClientIP = config.IsForwardedByClientIP()
 	err = r.Run(config.GetAddr())
 	if err != nil { log.Fatal(err) }
 }
