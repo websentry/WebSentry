@@ -29,8 +29,8 @@ func notificationToggle(sentryId primitive.ObjectID, lasttime time.Time, old str
 		"name": name,
 		"beforeTime": lasttime.Format("2006-01-02 15:04"),
 		"currentTime": time.Now().Format("2006-01-02 15:04"),
-		"beforeImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+old,
-		"afterImage": config.GetBaseUrl() + "v1/common/get_history_image?filename="+new,
+		"beforeImage": config.GetBackendUrl() + "v1/common/get_history_image?filename="+old,
+		"afterImage": config.GetBackendUrl() + "v1/common/get_history_image?filename="+new,
 	}
 
 	title := name + ": change detected"

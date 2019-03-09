@@ -7,16 +7,16 @@ import (
 )
 
 type Config struct {
-	ReleaseMode       bool              `json:"releaseMode"`
-	Addr              string            `json:"addr"`
-	Mongodb           Mongodb           `json:"mongodb"`
-	VerificationEmail VerificationEmail `json:"verificationEmail"`
-	FileStoragePath   string            `json:"fileStoragePath"`
-	SlaveKey          string            `json:"slaveKey"`
-	TokenSecretKey    string            `json:"tokenSecretKey"`
-	BaseUrl			  string			`json:"baseUrl"`
-	AccessControlAllowOrigin string     `json:"accessControlAllowOrigin"`
-	ForwardedByClientIP bool			`json:"forwardedByClientIP"`
+	ReleaseMode              bool              `json:"releaseMode"`
+	Addr                     string            `json:"addr"`
+	Mongodb                  Mongodb           `json:"mongodb"`
+	VerificationEmail        VerificationEmail `json:"verificationEmail"`
+	FileStoragePath          string            `json:"fileStoragePath"`
+	SlaveKey                 string            `json:"slaveKey"`
+	TokenSecretKey           string            `json:"tokenSecretKey"`
+	BackendUrl               string            `json:"backendUrl"`
+	AccessControlAllowOrigin string            `json:"accessControlAllowOrigin"`
+	ForwardedByClientIP      bool              `json:"forwardedByClientIP"`
 }
 
 type Mongodb struct {
@@ -72,8 +72,8 @@ func GetTokenSecretKey() string {
 	return config.TokenSecretKey
 }
 
-func GetBaseUrl() string {
-	return config.BaseUrl
+func GetBackendUrl() string {
+	return config.BackendUrl
 }
 
 func GetAccessControlAllowOrigin() string {

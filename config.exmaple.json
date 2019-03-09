@@ -14,7 +14,7 @@
   "fileStoragePath": "/example/path",
   "slaveKey": "testkey",
   "tokenSecretKey": "secretkey",
-  "baseUrl": "http://127.0.0.1:8080/",
+  "backendUrl": "http://127.0.0.1:8080/",
   "accessControlAllowOrigin": "*",
   "forwardedByClientIP": true
 }
