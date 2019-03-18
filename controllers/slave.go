@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/mongodb/mongo-go-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io/ioutil"
 	"math/rand"
 	"strconv"

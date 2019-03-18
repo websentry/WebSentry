@@ -1,7 +1,7 @@
 package databases
 
 import (
-	"github.com/mongodb/mongo-go-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"github.com/websentry/websentry/config"
 )
 
