@@ -42,7 +42,7 @@ func CheckUserExistence(dn int, u string) (bool, error) {
 		return false, errors.New("wrong parameter: databases does not exist")
 	}
 
-	count, err := c.Count(nil, bson.M{"email": u})
+	count, err := c.CountDocuments(nil, bson.M{"email": u})
 
 	if err != nil {
 		return false, errors.New("failed to count")
