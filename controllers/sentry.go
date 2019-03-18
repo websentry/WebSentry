@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
-	"github.com/mongodb/mongo-go-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
 	"io/ioutil"
