@@ -2,8 +2,6 @@ package utils
 
 import (
 	"errors"
-	"github.com/disintegration/imaging"
-	"github.com/websentry/websentry/config"
 	"image"
 	"image/png"
 	"math"
@@ -11,6 +9,10 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/disintegration/imaging"
+
+	"github.com/websentry/websentry/config"
 )
 
 const imageFilenameChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"

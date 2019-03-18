@@ -1,13 +1,15 @@
 package controllers
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
-	"math/rand"
-	"time"
 )
 
 const (

@@ -3,16 +3,18 @@ package controllers
 import (
 	"bytes"
 	"fmt"
-	"github.com/disintegration/imaging"
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"github.com/websentry/websentry/models"
-	"github.com/websentry/websentry/utils"
 	"io/ioutil"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/disintegration/imaging"
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/websentry/websentry/models"
+	"github.com/websentry/websentry/utils"
 )
 
 // [url] the url of the page that needs screenshot

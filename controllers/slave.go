@@ -1,14 +1,16 @@
 package controllers
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"sync"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/gin-gonic/gin"
+
 	"github.com/websentry/websentry/models"
 )
 

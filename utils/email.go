@@ -3,12 +3,14 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/websentry/websentry/config"
-	"gopkg.in/gomail.v2"
 	"html/template"
 	"strings"
 	"time"
-	)
+
+	"gopkg.in/gomail.v2"
+
+	"github.com/websentry/websentry/config"
+)
 
 const (
 	chBuffer = 100

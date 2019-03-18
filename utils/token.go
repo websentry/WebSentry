@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
+
 	"github.com/websentry/websentry/config"
-	"time"
 )
 
 const (
