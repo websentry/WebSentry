@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
+
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/controllers"
 )

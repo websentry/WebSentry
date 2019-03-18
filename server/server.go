@@ -1,12 +1,14 @@
 package server
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
+
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/controllers"
 	"github.com/websentry/websentry/databases"
 	"github.com/websentry/websentry/models"
-	"log"
 )
 
 func Init() {

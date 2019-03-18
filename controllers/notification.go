@@ -3,14 +3,16 @@ package controllers
 import (
 	"bytes"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"github.com/websentry/websentry/config"
-	"github.com/websentry/websentry/models"
-	"github.com/websentry/websentry/utils"
 	"html/template"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/websentry/websentry/config"
+	"github.com/websentry/websentry/models"
+	"github.com/websentry/websentry/utils"
 )
 
 func notificationToggle(sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
