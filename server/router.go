@@ -36,7 +36,6 @@ func setupRouter() *gin.Engine {
 		{
 			sentryGroup.POST("/request_full_screenshot", controllers.SentryRequestFullScreenshot)
 			sentryGroup.POST("/wait_full_screenshot", controllers.SentryWaitFullScreenshot)
-			sentryGroup.GET("/get_full_screenshot", controllers.SentryGetFullScreenshot)
 			sentryGroup.POST("/create", controllers.SentryCreate)
 			sentryGroup.POST("/list", controllers.SentryList)
 		}
@@ -62,6 +61,7 @@ func setupRouter() *gin.Engine {
 		commonGroup := v1.Group("/common")
 		{
 			commonGroup.GET("/get_history_image", controllers.GetHistoryImage)
+			commonGroup.GET("/get_full_screenshot_image", controllers.GetFullScreenshotImage)
 		}
 
 	}

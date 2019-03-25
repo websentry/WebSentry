@@ -81,10 +81,6 @@ func SentryList(c *gin.Context) {
 	})
 }
 
-func SentryGetFullScreenshot(c *gin.Context) {
-	getFullScreenshot(c)
-}
-
 func SentryCreate(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 

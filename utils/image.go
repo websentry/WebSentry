@@ -27,7 +27,7 @@ func init() {
 	os.MkdirAll(imageThumbBasePath, os.ModePerm)
 }
 
-func randStringBytes(n int) string {
+func RandStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = imageFilenameChar[rand.Intn(len(imageFilenameChar))]
@@ -39,7 +39,7 @@ func ImageRandomFilename() string {
 	var filename string
 
 	for {
-		filename = randStringBytes(32)
+		filename = RandStringBytes(32)
 
 		fullFilename := path.Join(imageThumbBasePath, filename + ".jpg")
 		_, err := os.Stat(fullFilename)
