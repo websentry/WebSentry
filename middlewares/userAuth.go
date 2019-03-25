@@ -9,7 +9,7 @@ import (
 )
 
 func UserAuthRequired(c *gin.Context) {
-	t := c.Query("token")
+	t := c.GetHeader("WS-User-Token")
 
 	u, err := utils.TokenValidate(t)
 

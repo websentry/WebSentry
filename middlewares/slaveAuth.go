@@ -14,7 +14,7 @@ func init() {
 }
 
 func SlaveAuth(c *gin.Context) {
-	if c.Query("key")!=slaveKey {
+	if c.GetHeader("WS-Slave-Key") != slaveKey {
 
 		controllers.JsonResponse(c, controllers.CodeAuthError, "", nil)
 
