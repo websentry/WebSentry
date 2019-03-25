@@ -31,7 +31,7 @@ func UserInfo(c *gin.Context) {
 
 func UserLogin(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
-	gPassword := c.DefaultQuery("password", "")
+	gPassword := c.DefaultPostForm("password", "")
 
 	if gEmail == "" {
 		JsonResponse(c, CodeWrongParam, "Email required", nil)
@@ -138,7 +138,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 // UserCreateWithVerification checks verification code and create the user in the user database
 func UserCreateWithVerification(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
-	gPassword := c.DefaultQuery("password", "")
+	gPassword := c.DefaultPostForm("password", "")
 	gVerificationCode := c.DefaultQuery("verification", "")
 
 	if gEmail == "" {

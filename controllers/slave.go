@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/websentry/websentry/models"
+	"github.com/websentry/websentry/utils"
 )
 
 const (
@@ -39,6 +39,7 @@ type taskInfo struct {
 	// screenshot
 	user primitive.ObjectID
 	channel chan bool
+	tmpToken string // tmp token for get request for the actual image
 
 	// sentry
 	sentryId primitive.ObjectID
@@ -232,6 +233,7 @@ func SlaveSubmitTask(c *gin.Context) {
 	ti.expire = time.Now().Add(time.Minute * 2)
 
 	if ti.mode==TM_FULLSCREEN {
+		ti.tmpToken = utils.RandStringBytes(16)
 		close(ti.channel)
 	} else {
 		go compareSentryTaskImage(int32(tid), ti)
@@ -277,6 +279,7 @@ func waitFullScreenshot(c *gin.Context) {
 		taskq.infoMux.Lock()
 		JsonResponse(c, CodeOK, "", gin.H{
 			"complete": true,
+			"imageToken": ti.tmpToken,
 			"feedbackCode": ti.feedbackCode,
 			"feedbackMsg": ti.feedbackMsg,
 		})
@@ -285,10 +288,10 @@ func waitFullScreenshot(c *gin.Context) {
 	}
 }
 
-func getFullScreenshot(c *gin.Context) {
+func GetFullScreenshotImage(c *gin.Context) {
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
 	if err!=nil {
-		JsonResponse(c, CodeWrongParam, "", nil)
+		c.String(400, "")
 		return
 	}
 
@@ -296,14 +299,15 @@ func getFullScreenshot(c *gin.Context) {
 	taskq.infoMux.Lock()
 
 	ti, ok := taskq.info[int32(tid)]
-	if !ok {
+	// use imageToken as auth, not WS-User-Token
+	if !ok || ti.tmpToken != c.Query("imageToken") {
 		taskq.infoMux.Unlock()
 		c.String(404, "")
 		return
 	}
 	taskq.infoMux.Unlock()
 
-	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN || ti.user!=c.MustGet("userId") {
+	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN {
 		c.String(404, "")
 		return
 	}
