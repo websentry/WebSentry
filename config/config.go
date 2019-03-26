@@ -15,7 +15,7 @@ type Config struct {
 	SlaveKey                 string            `json:"slaveKey"`
 	TokenSecretKey           string            `json:"tokenSecretKey"`
 	BackendUrl               string            `json:"backendUrl"`
-	AccessControlAllowOrigin string            `json:"accessControlAllowOrigin"`
+	CROSAllowOrigins 		 []string          `json:"crosAllowOrigins"`
 	ForwardedByClientIP      bool              `json:"forwardedByClientIP"`
 }
 
@@ -76,8 +76,8 @@ func GetBackendUrl() string {
 	return config.BackendUrl
 }
 
-func GetAccessControlAllowOrigin() string {
-	return config.AccessControlAllowOrigin
+func GetCROSAllowOrigins() []string {
+	return config.CROSAllowOrigins
 }
 
 func IsReleaseMode() bool {

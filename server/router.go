@@ -1,8 +1,10 @@
 package server
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/controllers"
 	"github.com/websentry/websentry/middlewares"
 )
@@ -11,7 +13,13 @@ func setupRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	r.Use(middlewares.Header)
+
+	// CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = config.GetCROSAllowOrigins()
+	corsConfig.AddAllowHeaders("WS-User-Token")
+	corsConfig.AddAllowHeaders("WS-Slave-Key")
+	r.Use(cors.New(corsConfig))
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong")
