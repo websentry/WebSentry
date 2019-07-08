@@ -15,7 +15,7 @@ import (
 	"github.com/websentry/websentry/utils"
 )
 
-func notificationToggle(sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
+func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
 	nid, err := models.GetSentryNotification(sentryId)
 	name, _ := models.GetSentryName(sentryId)
 	if err != nil {
@@ -41,14 +41,24 @@ func notificationToggle(sentryId primitive.ObjectID, lasttime time.Time, old str
 
 		b := bytes.Buffer{}
 		t, _ := template.ParseFiles("templates/notifications/serverchan.md")
-		t.Execute(&b, data)
+		err = t.Execute(&b, data)
+		if err != nil {
+			return err
+		}
 		msg := b.String()
 
 		title = template.URLQueryEscaper(title)
 		msg = template.URLQueryEscaper(msg)
-		http.Get(fmt.Sprintf("https://sc.ftqq.com/%s.send?text=%s&desp=%s", n.Setting["sckey"], title, msg))
+
+		//TODO: check response
+		_, err = http.Get(fmt.Sprintf("https://sc.ftqq.com/%s.send?text=%s&desp=%s",
+			n.Setting["sckey"], title, msg))
+		if err != nil {
+			return err
+		}
 
 		return nil
+
 	} else if n.Type == "email" {
 
 

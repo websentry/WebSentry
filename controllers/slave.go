@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -248,7 +249,12 @@ func SlaveSubmitTask(c *gin.Context) {
 		close(ti.channel)
 	} else {
 		// taskModeSentry
-		go compareSentryTaskImage(int32(tid), ti)
+		go func() {
+			err = compareSentryTaskImage(int32(tid), ti)
+			if err != nil {
+				log.Printf("[compareSentryTaskImage] Error occurred in task: %d, err: %v", tid, err)
+			}
+		}()
 	}
 
 	JsonResponse(c, CodeOK, "", nil)
