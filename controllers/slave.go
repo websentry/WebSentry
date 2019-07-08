@@ -17,19 +17,25 @@ import (
 const (
 	LONG_POLLING_TIMEOUT = 60 * time.Second
 	QUEUE_BUFFER = 100
+)
 
-	TS_IN_QUEUE = 0
-	TS_ASSIGNED = 1
-	TS_COMPLETE = 2
+type taskStatus int8
+const (
+	taskStatusInQueue taskStatus = iota
+	taskStatusAssigned
+	taskStatusCompleted
+)
 
-	TM_FULLSCREEN = 0
-	TM_SENTRY = 1
+type taskMode   int8
+const (
+	taskModeFullScreen taskMode = iota
+	taskModeSentry
 )
 
 type taskInfo struct {
 	// common
-	mode int
-	status int
+	mode taskMode
+	status taskStatus
 	image []byte
 	feedbackCode int
 	feedbackMsg string
@@ -105,8 +111,8 @@ func insertTaskinfo(ti *taskInfo) int32 {
 func addSentryTask(s *models.Sentry) int32 {
 	ti := new(taskInfo)
 	ti.task = s.Task
-	ti.mode = TM_SENTRY
-	ti.status = TS_IN_QUEUE
+	ti.mode = taskModeSentry
+	ti.status = taskStatusInQueue
 	ti.sentryId = s.Id
 	ti.baseImage = &s.Image
 	ti.expire = time.Now().Add(time.Minute * 5)
@@ -120,8 +126,8 @@ func addSentryTask(s *models.Sentry) int32 {
 func addFullScreenshotTask(task gin.H, user primitive.ObjectID) int32 {
 	ti := new(taskInfo)
 	ti.task = task
-	ti.mode = TM_FULLSCREEN
-	ti.status = TS_IN_QUEUE
+	ti.mode = taskModeFullScreen
+	ti.status = taskStatusInQueue
 	ti.expire = time.Now().Add(time.Minute * 1)
 	ti.channel = make(chan bool)
 	ti.user = user
@@ -170,7 +176,7 @@ func getTask() (int32, *taskInfo) {
 		taskq.infoMux.Unlock()
 
 		ti.expire = time.Now().Add(time.Minute * 4)
-		ti.status = TS_ASSIGNED
+		ti.status = taskStatusAssigned
 
 		return tid, ti
 	}
@@ -229,13 +235,14 @@ func SlaveSubmitTask(c *gin.Context) {
 
 	}
 
-	ti.status = TS_COMPLETE
+	ti.status = taskStatusCompleted
 	ti.expire = time.Now().Add(time.Minute * 2)
 
-	if ti.mode==TM_FULLSCREEN {
+	if ti.mode == taskModeFullScreen {
 		ti.tmpToken = utils.RandStringBytes(16)
 		close(ti.channel)
 	} else {
+		// taskModeSentry
 		go compareSentryTaskImage(int32(tid), ti)
 	}
 
@@ -253,12 +260,12 @@ func waitFullScreenshot(c *gin.Context) {
 	taskq.infoMux.Lock()
 
 	ti, ok := taskq.info[int32(tid)]
-	if !ok || ti.mode!=TM_FULLSCREEN || ti.user!=c.MustGet("userId") {
+	if !ok || ti.mode != taskModeFullScreen || ti.user!=c.MustGet("userId") {
 		taskq.infoMux.Unlock()
 		JsonResponse(c, CodeNotExist, "", nil)
 		return
 	}
-	incomplete := ti.status!= TS_COMPLETE
+	incomplete := ti.status != taskStatusCompleted
 	taskq.infoMux.Unlock()
 
 	timeoutFlag := false
@@ -290,7 +297,7 @@ func waitFullScreenshot(c *gin.Context) {
 
 func GetFullScreenshotImage(c *gin.Context) {
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
-	if err!=nil {
+	if err != nil {
 		c.String(400, "")
 		return
 	}
@@ -307,7 +314,7 @@ func GetFullScreenshotImage(c *gin.Context) {
 	}
 	taskq.infoMux.Unlock()
 
-	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN {
+	if ti.status != taskStatusCompleted || ti.image == nil || ti.mode != taskModeFullScreen {
 		c.String(404, "")
 		return
 	}
