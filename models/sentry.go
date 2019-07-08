@@ -135,7 +135,6 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 		return err
 	}
 
-	c := mongoDB.Collection("Sentries")
 	now := time.Now()
 
 	up := bson.M{
@@ -146,7 +145,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 
 	if changed {
 		// add history
-		c = mongoDB.Collection("ImageHistories")
+		c := mongoDB.Collection("ImageHistories")
 		_, err = c.UpdateOne(nil, bson.M{"_id": id}, bson.M{
 			"$push": bson.M{"images": &SentryImage{Time: now, File: newImage}},
 		})
@@ -162,6 +161,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 		up["$set"].(bson.M)["image.file"] = newImage
 	}
 
+	c := mongoDB.Collection("Sentries")
 	_, err = c.UpdateOne(nil, bson.M{"_id": id}, up)
 	if err != nil {
 		return err
