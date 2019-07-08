@@ -75,8 +75,13 @@ func GetUserSentries(user primitive.ObjectID) (results []Sentry, err error) {
 
 func AddSentry(s *Sentry) error {
 	// insert doc containing "foreign key" first
-	_, err := mongoDB.Collection("ImageHistories").InsertOne(nil, &ImageHistory{Id: s.Id})
-	if err != nil { return err }
+	_, err := mongoDB.Collection("ImageHistories").InsertOne(nil, &ImageHistory{
+		Id:     s.Id,
+		Images: []SentryImage{},
+	})
+	if err != nil {
+		return err
+	}
 	_, err = mongoDB.Collection("Sentries").InsertOne(nil, s)
 	return err
 }
