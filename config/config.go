@@ -35,7 +35,6 @@ var config Config
 
 func init() {
 	configFile, err := os.Open("config.json")
-	defer configFile.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,6 +45,10 @@ func init() {
 		log.Fatal(err)
 	}
 
+	err = configFile.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func GetAddr() string {

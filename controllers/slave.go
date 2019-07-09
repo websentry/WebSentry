@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -15,34 +16,45 @@ import (
 )
 
 const (
-	LONG_POLLING_TIMEOUT = 60 * time.Second
-	QUEUE_BUFFER = 100
+	// we need a timeout that is less than the timeout in proxy
+	// nginx default is 60s and cloudflare is 100s
+	longPollingTimeout = 42 * time.Second
 
-	TS_IN_QUEUE = 0
-	TS_ASSIGNED = 1
-	TS_COMPLETE = 2
+	queueBuffer = 100
+)
 
-	TM_FULLSCREEN = 0
-	TM_SENTRY = 1
+type taskStatus int8
+
+const (
+	taskStatusInQueue taskStatus = iota
+	taskStatusAssigned
+	taskStatusCompleted
+)
+
+type taskMode int8
+
+const (
+	taskModeFullScreen taskMode = iota
+	taskModeSentry
 )
 
 type taskInfo struct {
 	// common
-	mode int
-	status int
-	image []byte
+	mode         taskMode
+	status       taskStatus
+	image        []byte
 	feedbackCode int
-	feedbackMsg string
-	task   gin.H
-	expire time.Time
+	feedbackMsg  string
+	task         gin.H
+	expire       time.Time
 
 	// screenshot
-	user primitive.ObjectID
-	channel chan bool
+	user     primitive.ObjectID
+	channel  chan bool
 	tmpToken string // tmp token for get request for the actual image
 
 	// sentry
-	sentryId primitive.ObjectID
+	sentryId  primitive.ObjectID
 	baseImage *models.SentryImage
 }
 
@@ -62,8 +74,8 @@ var taskq taskQueue
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
-	taskq.pQueue = make(chan int32, QUEUE_BUFFER)
-	taskq.nQueue = make(chan int32, QUEUE_BUFFER)
+	taskq.pQueue = make(chan int32, queueBuffer)
+	taskq.nQueue = make(chan int32, queueBuffer)
 	taskq.info = make(map[int32]*taskInfo)
 
 	go cleanTask()
@@ -105,8 +117,8 @@ func insertTaskinfo(ti *taskInfo) int32 {
 func addSentryTask(s *models.Sentry) int32 {
 	ti := new(taskInfo)
 	ti.task = s.Task
-	ti.mode = TM_SENTRY
-	ti.status = TS_IN_QUEUE
+	ti.mode = taskModeSentry
+	ti.status = taskStatusInQueue
 	ti.sentryId = s.Id
 	ti.baseImage = &s.Image
 	ti.expire = time.Now().Add(time.Minute * 5)
@@ -120,8 +132,8 @@ func addSentryTask(s *models.Sentry) int32 {
 func addFullScreenshotTask(task gin.H, user primitive.ObjectID) int32 {
 	ti := new(taskInfo)
 	ti.task = task
-	ti.mode = TM_FULLSCREEN
-	ti.status = TS_IN_QUEUE
+	ti.mode = taskModeFullScreen
+	ti.status = taskStatusInQueue
 	ti.expire = time.Now().Add(time.Minute * 1)
 	ti.channel = make(chan bool)
 	ti.user = user
@@ -149,7 +161,7 @@ func getTask() (int32, *taskInfo) {
 			goto assign
 		case tid = <-taskq.nQueue:
 			goto assign
-		case <-time.After(LONG_POLLING_TIMEOUT):
+		case <-time.After(longPollingTimeout):
 			return -1, nil
 		}
 
@@ -170,7 +182,7 @@ func getTask() (int32, *taskInfo) {
 		taskq.infoMux.Unlock()
 
 		ti.expire = time.Now().Add(time.Minute * 4)
-		ti.status = TS_ASSIGNED
+		ti.status = taskStatusAssigned
 
 		return tid, ti
 	}
@@ -183,10 +195,10 @@ func SlaveInit(c *gin.Context) {
 func SlaveFetchTask(c *gin.Context) {
 	tid, ti := getTask()
 
-	if tid>=0 {
+	if tid >= 0 {
 		JsonResponse(c, CodeOK, "", gin.H{
 			"taskId": tid,
-			"task": ti.task,
+			"task":   ti.task,
 		})
 	} else {
 		JsonResponse(c, CodeOK, "", gin.H{
@@ -200,7 +212,7 @@ func SlaveSubmitTask(c *gin.Context) {
 	defer taskq.infoMux.Unlock()
 
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
-	if err!=nil {
+	if err != nil {
 		JsonResponse(c, CodeWrongParam, "", nil)
 		return
 	}
@@ -212,14 +224,14 @@ func SlaveSubmitTask(c *gin.Context) {
 	}
 
 	feedbackCode, err := strconv.ParseInt(c.Query("feedback"), 10, 32)
-	if feedbackCode!=0 {
+	if feedbackCode != 0 {
 		ti.feedbackCode = int(feedbackCode)
 		ti.feedbackMsg = c.Query("msg")
 	} else {
 		ti.feedbackCode = 0
 
 		fileH, err := c.FormFile("image")
-		if err!=nil {
+		if err != nil {
 			JsonResponse(c, CodeWrongParam, "Image error", nil)
 			return
 		}
@@ -229,14 +241,20 @@ func SlaveSubmitTask(c *gin.Context) {
 
 	}
 
-	ti.status = TS_COMPLETE
+	ti.status = taskStatusCompleted
 	ti.expire = time.Now().Add(time.Minute * 2)
 
-	if ti.mode==TM_FULLSCREEN {
+	if ti.mode == taskModeFullScreen {
 		ti.tmpToken = utils.RandStringBytes(16)
 		close(ti.channel)
 	} else {
-		go compareSentryTaskImage(int32(tid), ti)
+		// taskModeSentry
+		go func() {
+			err = compareSentryTaskImage(int32(tid), ti)
+			if err != nil {
+				log.Printf("[compareSentryTaskImage] Error occurred in task: %d, err: %v", tid, err)
+			}
+		}()
 	}
 
 	JsonResponse(c, CodeOK, "", nil)
@@ -245,7 +263,7 @@ func SlaveSubmitTask(c *gin.Context) {
 func waitFullScreenshot(c *gin.Context) {
 
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
-	if err!=nil {
+	if err != nil {
 		JsonResponse(c, CodeWrongParam, "", nil)
 		return
 	}
@@ -253,12 +271,12 @@ func waitFullScreenshot(c *gin.Context) {
 	taskq.infoMux.Lock()
 
 	ti, ok := taskq.info[int32(tid)]
-	if !ok || ti.mode!=TM_FULLSCREEN || ti.user!=c.MustGet("userId") {
+	if !ok || ti.mode != taskModeFullScreen || ti.user != c.MustGet("userId") {
 		taskq.infoMux.Unlock()
 		JsonResponse(c, CodeNotExist, "", nil)
 		return
 	}
-	incomplete := ti.status!= TS_COMPLETE
+	incomplete := ti.status != taskStatusCompleted
 	taskq.infoMux.Unlock()
 
 	timeoutFlag := false
@@ -266,7 +284,7 @@ func waitFullScreenshot(c *gin.Context) {
 		select {
 		case <-ti.channel:
 			timeoutFlag = false
-		case <-time.After(LONG_POLLING_TIMEOUT):
+		case <-time.After(longPollingTimeout):
 			timeoutFlag = true
 		}
 	}
@@ -278,10 +296,10 @@ func waitFullScreenshot(c *gin.Context) {
 	} else {
 		taskq.infoMux.Lock()
 		JsonResponse(c, CodeOK, "", gin.H{
-			"complete": true,
-			"imageToken": ti.tmpToken,
+			"complete":     true,
+			"imageToken":   ti.tmpToken,
 			"feedbackCode": ti.feedbackCode,
-			"feedbackMsg": ti.feedbackMsg,
+			"feedbackMsg":  ti.feedbackMsg,
 		})
 		taskq.infoMux.Unlock()
 
@@ -290,11 +308,10 @@ func waitFullScreenshot(c *gin.Context) {
 
 func GetFullScreenshotImage(c *gin.Context) {
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
-	if err!=nil {
+	if err != nil {
 		c.String(400, "")
 		return
 	}
-
 
 	taskq.infoMux.Lock()
 
@@ -307,7 +324,7 @@ func GetFullScreenshotImage(c *gin.Context) {
 	}
 	taskq.infoMux.Unlock()
 
-	if ti.status!=TS_COMPLETE || ti.image==nil || ti.mode!=TM_FULLSCREEN {
+	if ti.status != taskStatusCompleted || ti.image == nil || ti.mode != taskModeFullScreen {
 		c.String(404, "")
 		return
 	}

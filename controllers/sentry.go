@@ -191,7 +191,7 @@ func sentryTaskScheduler() {
 	}
 }
 
-func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
+func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 	defer func() {
 		// clean up
 		taskq.infoMux.Lock()
@@ -200,7 +200,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 	}()
 
 	b, err := imaging.Decode(bytes.NewReader(ti.image))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 
@@ -221,7 +221,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 	a, err := imaging.Open(utils.ImageGetFullPath(ti.baseImage.File, false))
 
 
-	if err!=nil {
+	if err != nil {
 		// TODO: error handling
 		fmt.Println("image error")
 		return err
@@ -239,11 +239,11 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) (error) {
 	err = models.UpdateSentryAfterCheck(ti.sentryId, changed, newImage)
 
 	if changed {
-		if err==nil {
+		if err == nil {
 			// success
 
 			// notification
-			notificationToggle(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
+			err = toggleNotification(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
 
 			// delete old file (keep thumb)
 			utils.ImageDelete(ti.baseImage.File, true)
