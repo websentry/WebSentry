@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -243,7 +244,10 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 			// success
 
 			// notification
-			err = toggleNotification(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
+			e := toggleNotification(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
+			if e != nil {
+				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v", ti.sentryId.Hex(), e)
+			}
 
 			// delete old file (keep thumb)
 			utils.ImageDelete(ti.baseImage.File, true)

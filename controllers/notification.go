@@ -39,9 +39,9 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 
 	if n.Type == "serverchan" {
 
-		b := bytes.Buffer{}
-		t, _ := template.ParseFiles("templates/notifications/serverchan.md")
-		err = t.Execute(&b, data)
+		b := &bytes.Buffer{}
+		t := template.Must(template.ParseFiles("templates/notifications/serverchan.md"))
+		err = t.Execute(b, data)
 		if err != nil {
 			return err
 		}
@@ -63,15 +63,12 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 
 
 		// apply email templates
-		b := bytes.Buffer{}
+		b := &bytes.Buffer{}
 
-		t, err := template.ParseFiles("templates/emails/baseEmail.html", "templates/notifications/email.html")
-		if err != nil {
-			panic(err)
-		}
+		t := template.Must(template.ParseFiles("templates/emails/baseEmail.html", "templates/notifications/email.html"))
 
-		if err = t.ExecuteTemplate(&b, "base", data); err != nil {
-			panic(err)
+		if err = t.ExecuteTemplate(b, "base", data); err != nil {
+			return err
 		}
 
 		bs := b.String()
