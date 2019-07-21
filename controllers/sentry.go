@@ -57,17 +57,16 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 func SentryList(c *gin.Context) {
 
 	results, err := models.GetUserSentries(c.MustGet("userId").(primitive.ObjectID))
-	if err!=nil {
+	if err != nil {
 		panic(err)
 	}
 
-	sentries := make([]struct{
-		Id primitive.ObjectID `json:"id"`
-		Name string `json:"name"`
-		Url string `json:"url"`
-		LastCheckTime time.Time `json:"lastCheckTime"`
+	sentries := make([]struct {
+		Id            primitive.ObjectID `json:"id"`
+		Name          string             `json:"name"`
+		Url           string             `json:"url"`
+		LastCheckTime time.Time          `json:"lastCheckTime"`
 	}, len(results))
-
 
 	for i := range results {
 		sentries[i].Name = results[i].Name
@@ -75,7 +74,6 @@ func SentryList(c *gin.Context) {
 		sentries[i].Url = results[i].Task["url"].(string)
 		sentries[i].LastCheckTime = results[i].LastCheckTime
 	}
-
 
 	JsonResponse(c, CodeOK, "", gin.H{
 		"sentries": sentries,
@@ -132,11 +130,11 @@ func SentryCreate(c *gin.Context) {
 		"url":      u.String(),
 		"timeout":  40000,
 		"fullPage": false,
-		"clip" : gin.H{
-			"x" : int(x),
-			"width" : int(width),
-			"height" : int(height),
-			"y" : int(y),
+		"clip": gin.H{
+			"x":      int(x),
+			"width":  int(width),
+			"height": int(height),
+			"y":      int(y),
 		},
 		"viewport": gin.H{
 			"width":    900,
@@ -163,7 +161,7 @@ func GetHistoryImage(c *gin.Context) {
 	if utils.ImageCheckFilename(filename) {
 		filename = utils.ImageGetFullPath(filename, true)
 		fileBytes, err := ioutil.ReadFile(filename)
-		if err!=nil {
+		if err != nil {
 			c.String(404, "")
 		} else {
 			c.Data(200, "image/jpeg", fileBytes)
@@ -218,9 +216,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		return err
 	}
 
-
 	a, err := imaging.Open(utils.ImageGetFullPath(ti.baseImage.File, false))
-
 
 	if err != nil {
 		// TODO: error handling
@@ -228,14 +224,16 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		return err
 	}
 
-	v, _ := utils.ImageCompare(a,b)
-	changed := v < 0.9999
+	similarity, _ := utils.ImageCompare(a, b)
+	changed := similarity < 0.9999
 	newImage := ""
 	if changed {
 		// changed
 		// save new image
 		newImage = utils.ImageSave(b)
 	}
+
+	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryId.Hex(), similarity*100, changed)
 
 	err = models.UpdateSentryAfterCheck(ti.sentryId, changed, newImage)
 
@@ -244,9 +242,9 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 			// success
 
 			// notification
-			e := toggleNotification(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage)
+			e := toggleNotification(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage, similarity)
 			if e != nil {
-				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v", ti.sentryId.Hex(), e)
+				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v \n", ti.sentryId.Hex(), e)
 			}
 
 			// delete old file (keep thumb)

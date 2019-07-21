@@ -15,7 +15,7 @@ import (
 	"github.com/websentry/websentry/utils"
 )
 
-func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old string, new string) error {
+func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old string, new string, similarity float32) error {
 	nid, err := models.GetSentryNotification(sentryId)
 	name, _ := models.GetSentryName(sentryId)
 	if err != nil {
@@ -33,6 +33,7 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 		"currentTime": time.Now().Format("2006-01-02 15:04"),
 		"beforeImage": config.GetBackendUrl() + "v1/common/get_history_image?filename="+old,
 		"afterImage": config.GetBackendUrl() + "v1/common/get_history_image?filename="+new,
+		"similarity": fmt.Sprintf("%.2f%%", similarity * 100),
 	}
 
 	title := name + ": change detected"
