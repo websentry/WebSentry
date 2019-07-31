@@ -80,6 +80,55 @@ func SentryList(c *gin.Context) {
 	})
 }
 
+func SentryInfo(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Query("id"))
+	if err != nil {
+		JsonResponse(c, CodeWrongParam, "Wrong sentry id", nil)
+		return
+	}
+
+	s, err := models.GetSentry(id)
+	if models.IsErrNoDocument(err) || s.User != c.MustGet("userId").(primitive.ObjectID) {
+		JsonResponse(c, CodeNotExist, "", nil)
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	notification, err := models.GetNotification(s.Notification)
+	if err != nil {
+		panic(err)
+	}
+
+	imageHistory, err := models.GetImageHistory(id)
+	if err != nil {
+		panic(err)
+	}
+
+	sentryJson := struct {
+		Id            primitive.ObjectID     `json:"id"`
+		Name          string                 `json:"name"`
+		Notification  *models.Notification    `json:"notification"`
+		CreateTime    time.Time              `json:"createTime"`
+		LastCheckTime time.Time              `json:"lastCheckTime"`
+		Interval      int                    `json:"interval"`
+		CheckCount    int                    `json:"checkCount"`
+		NotifyCount   int                    `json:"notifyCount"`
+		Image         *models.SentryImage     `json:"image"`
+		ImageHistory  *models.ImageHistory    `json:"imageHistory"`
+		Task          map[string]interface{} `json:"task"`
+	}{
+		s.Id, s.Name, notification, s.CreateTime, s.LastCheckTime,
+		s.Interval, s.CheckCount, s.NotifyCount, &s.Image,
+		imageHistory, s.Task,
+	}
+
+	JsonResponse(c, CodeOK, "", sentryJson)
+
+
+}
+
 func SentryCreate(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 
