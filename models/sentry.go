@@ -16,7 +16,7 @@ type SentryImage struct {
 
 type Sentry struct {
 	Id            primitive.ObjectID     `bson:"_id,omitempty"`
-	Name          string                 `bson:"Name"`
+	Name          string                 `bson:"name"`
 	User          primitive.ObjectID     `bson:"user"`
 	Notification  primitive.ObjectID     `bson:"notification"`
 	CreateTime    time.Time              `bson:"createTime"`
