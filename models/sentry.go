@@ -95,7 +95,7 @@ func GetSentryName(id primitive.ObjectID) (name string, err error) {
 	c := mongoDB.Collection("Sentries")
 
 	var result struct {
-		Name string `bson:"Name"`
+		Name string `bson:"name"`
 	}
 	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
 	if err != nil {
