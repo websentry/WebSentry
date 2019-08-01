@@ -109,14 +109,14 @@ func SentryInfo(c *gin.Context) {
 	sentryJson := struct {
 		Id            primitive.ObjectID     `json:"id"`
 		Name          string                 `json:"name"`
-		Notification  *models.Notification    `json:"notification"`
+		Notification  *models.Notification   `json:"notification"`
 		CreateTime    time.Time              `json:"createTime"`
 		LastCheckTime time.Time              `json:"lastCheckTime"`
 		Interval      int                    `json:"interval"`
 		CheckCount    int                    `json:"checkCount"`
 		NotifyCount   int                    `json:"notifyCount"`
-		Image         *models.SentryImage     `json:"image"`
-		ImageHistory  *models.ImageHistory    `json:"imageHistory"`
+		Image         *models.SentryImage    `json:"image"`
+		ImageHistory  *models.ImageHistory   `json:"imageHistory"`
 		Task          map[string]interface{} `json:"task"`
 	}{
 		s.Id, s.Name, notification, s.CreateTime, s.LastCheckTime,
@@ -125,7 +125,6 @@ func SentryInfo(c *gin.Context) {
 	}
 
 	JsonResponse(c, CodeOK, "", sentryJson)
-
 
 }
 
