@@ -10,13 +10,13 @@ import (
 )
 
 type SentryImage struct {
-	Time time.Time `bson:"time"`
-	File string    `bson:"file"`
+	Time time.Time `bson:"time" json:"time"`
+	File string    `bson:"file" json:"file"`
 }
 
 type Sentry struct {
 	Id            primitive.ObjectID     `bson:"_id,omitempty"`
-	Name          string                 `bson:"Name"`
+	Name          string                 `bson:"name"`
 	User          primitive.ObjectID     `bson:"user"`
 	Notification  primitive.ObjectID     `bson:"notification"`
 	CreateTime    time.Time              `bson:"createTime"`
@@ -30,8 +30,8 @@ type Sentry struct {
 }
 
 type ImageHistory struct {
-	Id     primitive.ObjectID `bson:"_id,omitempty"`
-	Images []SentryImage      `bson:"images"`
+	Id     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
+	Images []SentryImage      `bson:"images" json:"images"`
 }
 
 func GetUncheckedSentry() (*Sentry, error) {
@@ -62,16 +62,13 @@ func GetUserSentries(user primitive.ObjectID) (results []Sentry, err error) {
 	return
 }
 
-//func GetSentry(id primitive.ObjectID) (*Sentry, error) {
-//	c := mongoDB.Collection("Sentries")
-//
-//	var result Sentry
-//	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
-//	if err == mongo.ErrNoDocuments {
-//		return nil, nil
-//	}
-//	return &result, err
-//}
+func GetSentry(id primitive.ObjectID) (*Sentry, error) {
+	c := mongoDB.Collection("Sentries")
+
+	var result Sentry
+	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	return &result, err
+}
 
 func AddSentry(s *Sentry) error {
 	// insert doc containing "foreign key" first
@@ -84,6 +81,14 @@ func AddSentry(s *Sentry) error {
 	}
 	_, err = mongoDB.Collection("Sentries").InsertOne(nil, s)
 	return err
+}
+
+func GetImageHistory(id primitive.ObjectID) (*ImageHistory, error) {
+	c := mongoDB.Collection("ImageHistories")
+
+	var result ImageHistory
+	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	return &result, err
 }
 
 func GetSentryName(id primitive.ObjectID) (name string, err error) {

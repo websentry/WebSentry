@@ -7,7 +7,7 @@ import (
 )
 
 type Notification struct {
-	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	Id primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Name string `bson:"name" json:"name"`
 	User primitive.ObjectID `bson:"user" json:"-"`
 	Type string `bson:"type" json:"type"`
@@ -53,7 +53,7 @@ func NotificationCheckOwner(id primitive.ObjectID, user primitive.ObjectID) bool
 	var result struct{ User primitive.ObjectID `bson:"user"` }
 
 	err := mongoDB.Collection("Notifications").FindOne(nil, bson.M{"_id": id}).Decode(&result)
-	if err==nil && result.User == user {
+	if err == nil && result.User == user {
 		return true
 	}
 	return false

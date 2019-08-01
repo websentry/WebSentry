@@ -33,7 +33,7 @@ var msgMap = map[int]string {
 	-1001: "Area too large",
 }
 
-func JsonResponse(c *gin.Context, code int, detail string, data gin.H) {
+func JsonResponse(c *gin.Context, code int, detail string, data interface{}) {
 	json := gin.H{}
 	json["code"] = code
 	json["msg"] = msgMap[code]

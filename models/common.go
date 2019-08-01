@@ -30,6 +30,10 @@ func Init(db *mongo.Database) error {
 
 // Helper for MongoDB
 
+func IsErrNoDocument(err error) bool {
+	return err == mongo.ErrNoDocuments
+}
+
 // modify from mgo "func (iter *Iter) All(result interface{}) error"
 func getAllFromCursor(cur *mongo.Cursor, result interface{}) error {
 	resultv := reflect.ValueOf(result)
