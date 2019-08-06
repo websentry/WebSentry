@@ -14,6 +14,8 @@ import (
 
 const (
 	verificationCodeLength = 6
+	maxEmailLength         = 254
+	maxPasswordLength      = 64
 )
 
 func UserInfo(c *gin.Context) {
@@ -33,13 +35,26 @@ func UserLogin(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 	gPassword := c.DefaultPostForm("password", "")
 
+	gEmailLength := len(gEmail)
+	gPasswordLength := len(gPassword)
+
 	if gEmailLength == 0 {
 		JsonResponse(c, CodeWrongParam, "Email required", nil)
 		return
 	}
 
+	if gEmailLength > maxEmailLength {
+		JsonResponse(c, CodeWrongParam, "Email is too long", nil)
+		return
+	}
+
 	if gPasswordLength == 0 {
 		JsonResponse(c, CodeWrongParam, "Password required", nil)
+		return
+	}
+
+	if gPasswordLength > maxPasswordLength {
+		JsonResponse(c, CodeWrongParam, "Password is too long", nil)
 		return
 	}
 
