@@ -33,12 +33,12 @@ func UserLogin(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 	gPassword := c.DefaultPostForm("password", "")
 
-	if gEmail == "" {
+	if gEmailLength == 0 {
 		JsonResponse(c, CodeWrongParam, "Email required", nil)
 		return
 	}
 
-	if gPassword == "" {
+	if gPasswordLength == 0 {
 		JsonResponse(c, CodeWrongParam, "Password required", nil)
 		return
 	}
