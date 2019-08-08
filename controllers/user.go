@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,7 +41,7 @@ func UserInfo(c *gin.Context) {
 }
 
 func UserLogin(c *gin.Context) {
-	gEmail := c.DefaultQuery("email", "")
+	gEmail := getFormattedEmail(c)
 	gPassword := c.DefaultPostForm("password", "")
 
 	if isFieldInvalid(gEmail, emailField) {
@@ -90,7 +91,7 @@ func UserLogin(c *gin.Context) {
 
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
-	gEmail := c.DefaultQuery("email", "")
+	gEmail := getFormattedEmail(c)
 
 	// TODO: email check
 	if isFieldInvalid(gEmail, emailField) {
@@ -147,7 +148,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 // UserCreateWithVerification checks verification code and create the user in the user database
 func UserCreateWithVerification(c *gin.Context) {
-	gEmail := c.DefaultQuery("email", "")
+	gEmail := getFormattedEmail(c)
 	gPassword := c.DefaultPostForm("password", "")
 	gVerificationCode := c.DefaultQuery("verification", "")
 
@@ -253,4 +254,8 @@ func isFieldInvalid(str string, field int) bool {
 	default:
 		return true
 	}
+}
+
+func getFormattedEmail(c *gin.Context) string {
+	return strings.ToLower(c.DefaultQuery("email", ""))
 }
