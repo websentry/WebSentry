@@ -27,6 +27,7 @@ const (
 	verficationCodeField
 )
 
+// UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
 	result := models.User{}
 	err := models.GetUserById(c.MustGet("userId").(primitive.ObjectID), &result)
@@ -40,6 +41,7 @@ func UserInfo(c *gin.Context) {
 	return
 }
 
+// UserLogin takes email and password and generate login token if succeed
 func UserLogin(c *gin.Context) {
 	gEmail := getFormattedEmail(c)
 	gPassword := c.DefaultPostForm("password", "")
@@ -206,17 +208,17 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	userId := primitive.NewObjectID()
+	userID := primitive.NewObjectID()
 
 	// insert doc containing "foreign key" first
-	err = models.NotificationAddEmail(userId, gEmail, "--default--")
+	err = models.NotificationAddEmail(userID, gEmail, "--default--")
 
 	if err != nil {
 		panic(err)
 	}
 
 	_, err = models.GetUserCollection(0).InsertOne(nil, &models.User{
-		Id: 		 userId,
+		Id:          userID,
 		Email:       gEmail,
 		Password:    hash,
 		TimeCreated: time.Now(),
