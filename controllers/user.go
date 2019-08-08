@@ -14,8 +14,16 @@ import (
 
 const (
 	verificationCodeLength = 6
+	minEmailLength         = 3
 	maxEmailLength         = 254
+	minPasswordLength      = 8
 	maxPasswordLength      = 64
+)
+
+const (
+	emailField = iota
+	passwordField
+	verficationCodeField
 )
 
 func UserInfo(c *gin.Context) {
@@ -35,26 +43,13 @@ func UserLogin(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 	gPassword := c.DefaultPostForm("password", "")
 
-	gEmailLength := len(gEmail)
-	gPasswordLength := len(gPassword)
-
-	if gEmailLength == 0 {
-		JsonResponse(c, CodeWrongParam, "Email required", nil)
+	if isFieldInvalid(gEmail, emailField) {
+		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
-	if gEmailLength > maxEmailLength {
-		JsonResponse(c, CodeWrongParam, "Email is too long", nil)
-		return
-	}
-
-	if gPasswordLength == 0 {
-		JsonResponse(c, CodeWrongParam, "Password required", nil)
-		return
-	}
-
-	if gPasswordLength > maxPasswordLength {
-		JsonResponse(c, CodeWrongParam, "Password is too long", nil)
+	if isFieldInvalid(gPassword, passwordField) {
+		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
@@ -98,8 +93,8 @@ func UserGetSignUpVerification(c *gin.Context) {
 	gEmail := c.DefaultQuery("email", "")
 
 	// TODO: email check
-	if gEmail == "" {
-		JsonResponse(c, CodeWrongParam, "Email required", nil)
+	if isFieldInvalid(gEmail, emailField) {
+		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
@@ -156,18 +151,18 @@ func UserCreateWithVerification(c *gin.Context) {
 	gPassword := c.DefaultPostForm("password", "")
 	gVerificationCode := c.DefaultQuery("verification", "")
 
-	if gEmail == "" {
-		JsonResponse(c, CodeWrongParam, "Email required", nil)
+	if isFieldInvalid(gEmail, emailField) {
+		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
-	if gPassword == "" {
-		JsonResponse(c, CodeWrongParam, "Password required", nil)
+	if isFieldInvalid(gPassword, passwordField) {
+		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
-	if gVerificationCode == "" {
-		JsonResponse(c, CodeWrongParam, "Verification code required", nil)
+	if isFieldInvalid(gVerificationCode, verficationCodeField) {
+		JsonResponse(c, CodeWrongParam, "Verification format is invalid", nil)
 		return
 	}
 
@@ -246,3 +241,16 @@ func generateVerificationCode() string {
 	return string(rst)
 }
 
+func isFieldInvalid(str string, field int) bool {
+	len := len(str)
+	switch field {
+	case emailField:
+		return len >= minEmailLength && len <= maxEmailLength
+	case passwordField:
+		return len >= minPasswordLength && len <= maxPasswordLength
+	case verficationCodeField:
+		return len == verificationCodeLength
+	default:
+		return true
+	}
+}
