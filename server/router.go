@@ -27,44 +27,60 @@ func setupRouter() *gin.Engine {
 
 	v1 := r.Group("/v1")
 	{
-		v1.POST("/get_verification", controllers.UserGetSignUpVerification)
-		v1.POST("/create_user", controllers.UserCreateWithVerification)
-		v1.POST("/login", controllers.UserLogin)
 
-		// user
-		userGroup := v1.Group("/user")
-		userGroup.Use(middlewares.UserAuthRequired)
+		// sensitive api
+		sensitive := v1.Group("")
+		sensitive.Use(middlewares.GetSensitiveLimiter())
 		{
-			userGroup.POST("/info", controllers.UserInfo)
+			sensitive.POST("/get_verification", controllers.UserGetSignUpVerification)
+			sensitive.POST("/create_user", controllers.UserCreateWithVerification)
+			sensitive.POST("/login", controllers.UserLogin)
 		}
 
-		// sentry
-		sentryGroup := v1.Group("/sentry")
-		sentryGroup.Use(middlewares.UserAuthRequired)
+		// general api
+		general := v1.Group("")
+		general.Use(middlewares.UserAuthRequired)
+		general.Use(middlewares.GetGeneralLimiter())
 		{
-			sentryGroup.POST("/request_full_screenshot", controllers.SentryRequestFullScreenshot)
-			sentryGroup.POST("/wait_full_screenshot", controllers.SentryWaitFullScreenshot)
-			sentryGroup.POST("/create", controllers.SentryCreate)
-			sentryGroup.POST("/list", controllers.SentryList)
-			sentryGroup.POST("/info", controllers.SentryInfo)
+			// user
+			userGroup := general.Group("/user")
+			{
+				userGroup.POST("/info", controllers.UserInfo)
+			}
+
+			// sentry
+			sentryGroup := general.Group("/sentry")
+			{
+				sentryGroup.POST("/wait_full_screenshot", controllers.SentryWaitFullScreenshot)
+				sentryGroup.POST("/create", controllers.SentryCreate)
+				sentryGroup.POST("/list", controllers.SentryList)
+				sentryGroup.POST("/info", controllers.SentryInfo)
+
+				screenshot := sentryGroup.Group("")
+				screenshot.Use(middlewares.GetScreenshotLimiter())
+				{
+					screenshot.POST("/request_full_screenshot", controllers.SentryRequestFullScreenshot)
+				}
+			}
+
+			// notification
+			notificationGroup := general.Group("/notification")
+			{
+				notificationGroup.POST("/list", controllers.NotificationList)
+				notificationGroup.POST("/add_serverchan", controllers.NotificationAddServerChan)
+			}
+
+			// slave
+			slaveGroup := general.Group("/slave")
+			slaveGroup.Use(middlewares.SlaveAuth)
+			slaveGroup.Use(middlewares.GetSlaveLimiter())
+			{
+				slaveGroup.POST("/init", controllers.SlaveInit)
+				slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)
+				slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
+			}
 		}
 
-		// notification
-		notificationGroup := v1.Group("/notification")
-		notificationGroup.Use(middlewares.UserAuthRequired)
-		{
-			notificationGroup.POST("/list", controllers.NotificationList)
-			notificationGroup.POST("/add_serverchan", controllers.NotificationAddServerChan)
-		}
-
-		// slave
-		slaveGroup := v1.Group("/slave")
-		slaveGroup.Use(middlewares.SlaveAuth)
-		{
-			slaveGroup.POST("/init", controllers.SlaveInit)
-			slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)
-			slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
-		}
 
 		// common
 		commonGroup := v1.Group("/common")
