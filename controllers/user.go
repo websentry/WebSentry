@@ -58,14 +58,6 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	// limits login attempts
-	// TODO: add captcha
-	if utils.CheckLoginAvailability(gEmail, c.ClientIP()) == false {
-		JsonResponse(c, CodeExceededLimits, "", nil)
-		// "expireDuration": utils.LoginExpireDuration,
-		return
-	}
-
 	// check if the user exists
 	userExist, err := models.CheckUserExistence(0, gEmail)
 	if err != nil {
