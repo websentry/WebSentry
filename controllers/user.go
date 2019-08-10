@@ -248,11 +248,11 @@ func isFieldInvalid(str string, field int) bool {
 	len := len(str)
 	switch field {
 	case emailField:
-		return len >= minEmailLength && len <= maxEmailLength
+		return len < minEmailLength || len > maxEmailLength
 	case passwordField:
-		return len >= minPasswordLength && len <= maxPasswordLength
+		return len < minPasswordLength || len > maxPasswordLength
 	case verficationCodeField:
-		return len == verificationCodeLength
+		return len != verificationCodeLength
 	default:
 		return true
 	}
