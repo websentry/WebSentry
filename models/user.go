@@ -23,10 +23,10 @@ type UserVerification struct {
 
 // User : Entry in the actual User table
 type User struct {
-	Id          primitive.ObjectID `bson:"_id,omitempty"`
-	Email       string        `bson:"email"`
-	Password    string        `bson:"password"`
-	TimeCreated time.Time     `bson:"createdAt"`
+	ID          primitive.ObjectID `bson:"_id,omitempty"`
+	Email       string             `bson:"email"`
+	Password    string             `bson:"password"`
+	TimeCreated time.Time          `bson:"createdAt"`
 
 	// TODO: task id?
 }
@@ -59,7 +59,7 @@ func GetUserVerificationByEmail(u string, result interface{}) error {
 
 // GetUserById get the user's information by his id,
 // it takes a id, and a result structure
-func GetUserById(id primitive.ObjectID, result interface{}) error {
+func GetUserByID(id primitive.ObjectID, result interface{}) error {
 	c := GetUserCollection()
 	return c.FindOne(nil, bson.M{"_id": id}).Decode(result)
 }

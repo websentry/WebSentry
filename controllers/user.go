@@ -32,7 +32,7 @@ const (
 // UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
 	result := models.User{}
-	err := models.GetUserById(c.MustGet("userId").(primitive.ObjectID), &result)
+	err := models.GetUserByID(c.MustGet("userId").(primitive.ObjectID), &result)
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +89,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	JsonResponse(c, CodeOK, "", gin.H{
-		"token": utils.TokenGenerate(result.Id.Hex()),
+		"token": utils.TokenGenerate(result.ID.Hex()),
 	})
 }
 
@@ -220,7 +220,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	_, err = models.GetUserCollection().InsertOne(nil, &models.User{
-		Id:          userID,
+		ID:          userID,
 		Email:       gEmail,
 		Password:    hash,
 		TimeCreated: time.Now(),
