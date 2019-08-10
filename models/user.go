@@ -57,7 +57,7 @@ func GetUserVerificationByEmail(u string, result interface{}) error {
 	return GetUserVerificationCollection().FindOne(nil, bson.M{"email": u}).Decode(result)
 }
 
-// GetUserById get the user's information by his id,
+// GetUserByID get the user's information by his id,
 // it takes a id, and a result structure
 func GetUserByID(id primitive.ObjectID, result interface{}) error {
 	c := GetUserCollection()
