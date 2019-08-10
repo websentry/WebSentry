@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,10 +15,21 @@ import (
 
 const (
 	verificationCodeLength = 6
+	minEmailLength         = 3
 	maxEmailLength         = 254
+	minPasswordLength      = 8
 	maxPasswordLength      = 64
 )
 
+type fieldType int8
+
+const (
+	emailField fieldType = iota
+	passwordField
+	verficationCodeField
+)
+
+// UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
 	result := models.User{}
 	err := models.GetUserById(c.MustGet("userId").(primitive.ObjectID), &result)
@@ -31,30 +43,18 @@ func UserInfo(c *gin.Context) {
 	return
 }
 
+// UserLogin takes email and password and generate login token if succeed
 func UserLogin(c *gin.Context) {
-	gEmail := c.DefaultQuery("email", "")
+	gEmail := getFormattedEmail(c)
 	gPassword := c.DefaultPostForm("password", "")
 
-	gEmailLength := len(gEmail)
-	gPasswordLength := len(gPassword)
-
-	if gEmailLength == 0 {
-		JsonResponse(c, CodeWrongParam, "Email required", nil)
+	if isFieldInvalid(gEmail, emailField) {
+		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
-	if gEmailLength > maxEmailLength {
-		JsonResponse(c, CodeWrongParam, "Email is too long", nil)
-		return
-	}
-
-	if gPasswordLength == 0 {
-		JsonResponse(c, CodeWrongParam, "Password required", nil)
-		return
-	}
-
-	if gPasswordLength > maxPasswordLength {
-		JsonResponse(c, CodeWrongParam, "Password is too long", nil)
+	if isFieldInvalid(gPassword, passwordField) {
+		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
@@ -87,11 +87,11 @@ func UserLogin(c *gin.Context) {
 
 // UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
-	gEmail := c.DefaultQuery("email", "")
+	gEmail := getFormattedEmail(c)
 
 	// TODO: email check
-	if gEmail == "" {
-		JsonResponse(c, CodeWrongParam, "Email required", nil)
+	if isFieldInvalid(gEmail, emailField) {
+		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
@@ -144,22 +144,22 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 // UserCreateWithVerification checks verification code and create the user in the user database
 func UserCreateWithVerification(c *gin.Context) {
-	gEmail := c.DefaultQuery("email", "")
+	gEmail := getFormattedEmail(c)
 	gPassword := c.DefaultPostForm("password", "")
 	gVerificationCode := c.DefaultQuery("verification", "")
 
-	if gEmail == "" {
-		JsonResponse(c, CodeWrongParam, "Email required", nil)
+	if isFieldInvalid(gEmail, emailField) {
+		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
-	if gPassword == "" {
-		JsonResponse(c, CodeWrongParam, "Password required", nil)
+	if isFieldInvalid(gPassword, passwordField) {
+		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
-	if gVerificationCode == "" {
-		JsonResponse(c, CodeWrongParam, "Verification code required", nil)
+	if isFieldInvalid(gVerificationCode, verficationCodeField) {
+		JsonResponse(c, CodeWrongParam, "Verification format is invalid", nil)
 		return
 	}
 
@@ -202,17 +202,17 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	userId := primitive.NewObjectID()
+	userID := primitive.NewObjectID()
 
 	// insert doc containing "foreign key" first
-	err = models.NotificationAddEmail(userId, gEmail, "--default--")
+	err = models.NotificationAddEmail(userID, gEmail, "--default--")
 
 	if err != nil {
 		panic(err)
 	}
 
 	_, err = models.GetUserCollection(0).InsertOne(nil, &models.User{
-		Id: 		 userId,
+		Id:          userID,
 		Email:       gEmail,
 		Password:    hash,
 		TimeCreated: time.Now(),
@@ -238,3 +238,20 @@ func generateVerificationCode() string {
 	return string(rst)
 }
 
+func isFieldInvalid(str string, field fieldType) bool {
+	len := len(str)
+	switch field {
+	case emailField:
+		return len < minEmailLength || len > maxEmailLength
+	case passwordField:
+		return len < minPasswordLength || len > maxPasswordLength
+	case verficationCodeField:
+		return len != verificationCodeLength
+	default:
+		return true
+	}
+}
+
+func getFormattedEmail(c *gin.Context) string {
+	return strings.ToLower(c.DefaultQuery("email", ""))
+}
