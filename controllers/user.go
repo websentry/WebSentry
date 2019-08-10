@@ -21,8 +21,10 @@ const (
 	maxPasswordLength      = 64
 )
 
+type fieldType int8
+
 const (
-	emailField = iota
+	emailField fieldType = iota
 	passwordField
 	verficationCodeField
 )
@@ -244,7 +246,7 @@ func generateVerificationCode() string {
 	return string(rst)
 }
 
-func isFieldInvalid(str string, field int) bool {
+func isFieldInvalid(str string, field fieldType) bool {
 	len := len(str)
 	switch field {
 	case emailField:
