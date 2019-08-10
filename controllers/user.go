@@ -67,7 +67,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	// check if the user exists
-	userExist, err := models.CheckUserExistence(0, gEmail)
+	userExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -78,7 +78,7 @@ func UserLogin(c *gin.Context) {
 
 	// check password
 	result := models.User{}
-	err = models.GetUserByEmail(0, gEmail, &result)
+	err = models.GetUserByEmail(gEmail, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +104,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	}
 
 	// check existence of the user
-	userAlreadyExist, err := models.CheckUserExistence(0, gEmail)
+	userAlreadyExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +115,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	var verificationCode string
 
-	userVerificationExist, err := models.CheckUserExistence(1, gEmail)
+	userVerificationExist, err := models.CheckUserVerificationExistence(gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -123,19 +123,19 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userVerificationExist {
 		// fetched verification code before
 		result := models.UserVerification{}
-		err = models.GetUserByEmail(1, gEmail, &result)
+		err = models.GetUserVerificationByEmail(gEmail, &result)
 		if err != nil {
 			panic(err)
 		}
 
 		verificationCode = result.VerificationCode
-		_, err = models.GetUserCollection(1).UpdateOne(nil,
+		_, err = models.GetUserVerificationCollection().UpdateOne(nil,
 			bson.M{"email": gEmail},
 			bson.M{"$set": bson.M{"createdAt": time.Now()}},
 		)
 	} else {
 		verificationCode = generateVerificationCode()
-		_, err = models.GetUserCollection(1).InsertOne(nil, &models.UserVerification{
+		_, err = models.GetUserVerificationCollection().InsertOne(nil, &models.UserVerification{
 			Email:            gEmail,
 			VerificationCode: verificationCode,
 			CreatedAt:        time.Now(),
@@ -172,7 +172,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	// check if it is already in the Users table
-	userExist, err := models.CheckUserExistence(0, gEmail)
+	userExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -183,7 +183,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	// check if the user exist in UserVerifications table
-	userVerificationExist, err := models.CheckUserExistence(1, gEmail)
+	userVerificationExist, err := models.CheckUserVerificationExistence(gEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -195,7 +195,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// check if the verification code is correct
 	result := models.UserVerification{}
-	err = models.GetUserByEmail(1, gEmail, &result)
+	err = models.GetUserVerificationByEmail(gEmail, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -219,7 +219,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	_, err = models.GetUserCollection(0).InsertOne(nil, &models.User{
+	_, err = models.GetUserCollection().InsertOne(nil, &models.User{
 		Id:          userID,
 		Email:       gEmail,
 		Password:    hash,
