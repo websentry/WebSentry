@@ -118,7 +118,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 	if userVerificationExist {
 		// verfication code still valid
 		JsonResponse(c, CodeOK, "", gin.H{
-			"isNew": false,
+			"generated": false,
 		})
 	} else {
 		verificationCode = generateVerificationCode()
@@ -139,7 +139,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		utils.SendVerificationEmail(gEmail, verificationCode)
 
 		JsonResponse(c, CodeOK, "", gin.H{
-			"isNew": true,
+			"generated": true,
 		})
 	}
 }
@@ -196,7 +196,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// exceed the trying limit
 	if result.RemainingCount <= 0 {
-		_, err = models.GetUserVerificationCollection().DeleteMany(nil,
+		_, err = models.GetUserVerificationCollection().DeleteOne(nil,
 			bson.M{"email": gEmail},
 		)
 		if err != nil {
