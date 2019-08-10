@@ -70,15 +70,16 @@ func setupRouter() *gin.Engine {
 				notificationGroup.POST("/add_serverchan", controllers.NotificationAddServerChan)
 			}
 
-			// slave
-			slaveGroup := general.Group("/slave")
-			slaveGroup.Use(middlewares.SlaveAuth)
-			slaveGroup.Use(middlewares.GetSlaveLimiter())
-			{
-				slaveGroup.POST("/init", controllers.SlaveInit)
-				slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)
-				slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
-			}
+		}
+
+		// slave
+		slaveGroup := v1.Group("/slave")
+		slaveGroup.Use(middlewares.SlaveAuth)
+		slaveGroup.Use(middlewares.GetSlaveLimiter())
+		{
+			slaveGroup.POST("/init", controllers.SlaveInit)
+			slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)
+			slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
 		}
 
 
