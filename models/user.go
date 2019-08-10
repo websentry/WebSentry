@@ -18,6 +18,7 @@ const (
 type UserVerification struct {
 	Email            string    `bson:"email"`
 	VerificationCode string    `bson:"verification"`
+	RemainingCount   int       `bson:"remainingCount"`
 	CreatedAt        time.Time `bson:"createdAt"`
 }
 
