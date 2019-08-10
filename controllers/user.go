@@ -14,11 +14,14 @@ import (
 )
 
 const (
-	verificationCodeLength = 6
-	minEmailLength         = 3
-	maxEmailLength         = 254
-	minPasswordLength      = 8
-	maxPasswordLength      = 64
+	minEmailLength = 3
+	maxEmailLength = 254
+
+	minPasswordLength = 8
+	maxPasswordLength = 64
+
+	verificationCodeLength      = 6
+	maxVerificationCodeTryCount = 100
 )
 
 type fieldType int8
@@ -113,33 +116,32 @@ func UserGetSignUpVerification(c *gin.Context) {
 	}
 
 	if userVerificationExist {
-		// fetched verification code before
-		result := models.UserVerification{}
-		err = models.GetUserVerificationByEmail(gEmail, &result)
-		if err != nil {
-			panic(err)
-		}
-
-		verificationCode = result.VerificationCode
-		_, err = models.GetUserVerificationCollection().UpdateOne(nil,
-			bson.M{"email": gEmail},
-			bson.M{"$set": bson.M{"createdAt": time.Now()}},
-		)
+		// verfication code still valid
+		JsonResponse(c, CodeOK, "", gin.H{
+			"generated": false,
+		})
 	} else {
 		verificationCode = generateVerificationCode()
 		_, err = models.GetUserVerificationCollection().InsertOne(nil, &models.UserVerification{
 			Email:            gEmail,
 			VerificationCode: verificationCode,
+			RemainingCount:   maxVerificationCodeTryCount,
 			CreatedAt:        time.Now(),
 		})
-	}
-	if err != nil {
-		panic(err)
-	}
 
-	utils.SendVerificationEmail(gEmail, verificationCode)
+		if err != nil {
+			panic(err)
+		}
 
-	JsonResponse(c, CodeOK, "", nil)
+		// we only send a verfication code once
+		// until it is invalid due to exceeding limits of trying
+		// or it expires
+		utils.SendVerificationEmail(gEmail, verificationCode)
+
+		JsonResponse(c, CodeOK, "", gin.H{
+			"generated": true,
+		})
+	}
 }
 
 // UserCreateWithVerification checks verification code and create the user in the user database
@@ -191,8 +193,36 @@ func UserCreateWithVerification(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
+
+	// exceed the trying limit
+	if result.RemainingCount <= 0 {
+		_, err = models.GetUserVerificationCollection().DeleteOne(nil,
+			bson.M{"email": gEmail},
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		JsonResponse(c, CodeAuthError, "exceed trying limit", gin.H{
+			"expired": true,
+		})
+		return
+	}
+
+	// incorrect verification code
 	if result.VerificationCode != gVerificationCode {
-		JsonResponse(c, CodeAuthError, "", nil)
+		// reduce remaining trying count
+		_, err = models.GetUserVerificationCollection().UpdateOne(nil,
+			bson.M{"email": gEmail},
+			bson.M{"$inc": bson.M{"remainingCount": -1}},
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		JsonResponse(c, CodeAuthError, "incorrect verification code", gin.H{
+			"expired": false,
+		})
 		return
 	}
 
