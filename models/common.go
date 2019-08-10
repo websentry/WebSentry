@@ -16,7 +16,7 @@ func Init(db *mongo.Database) error {
 
 	// User - UserVerifications - Index
 	const expireTimeInSec = 60 * 10
-	c := GetUserCollection(1)
+	c := GetUserVerificationCollection()
 	index := mongo.IndexModel{
 		Keys: bson.M{
 			"createdAt": 1,
