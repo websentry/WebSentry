@@ -2,31 +2,43 @@ package utils
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
+	"log"
 	"strings"
 	"time"
 
-	"gopkg.in/gomail.v2"
+	"gopkg.in/mail.v2"
 
 	"github.com/websentry/websentry/config"
 )
 
 const (
-	chBuffer = 100
+	chBuffer int           = 1000
+	timeOut  time.Duration = time.Minute
 )
 
-var ch chan *gomail.Message
+var ch chan *mail.Message
 var c config.VerificationEmail
 
 func init() {
-	ch = make(chan *gomail.Message, chBuffer)
+	ch = make(chan *mail.Message, chBuffer)
 	c = config.GetVerificationEmailConfig()
 
-	go func() {
-		d := gomail.NewDialer(c.Server, c.Port, c.Email, c.Password)
+	d := mail.NewDialer(c.Server, c.Port, c.Email, c.Password)
+	d.Timeout = 0
+	runDaemon(d)
+}
 
-		var sc gomail.SendCloser
+func runDaemon(d *mail.Dialer) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[INFO]: Email daemon recovered %v", r)
+				runDaemon(d)
+			}
+		}()
+
+		var sc mail.SendCloser
 		var err error
 
 		open := false
@@ -40,21 +52,21 @@ func init() {
 
 				if !open {
 					if sc, err = d.Dial(); err != nil {
-						panic(err)
+						log.Panicln("[Error] Failed to dial SMTP server: ", err)
 					}
 					open = true
 				}
 
-				if err := gomail.Send(sc, m); err != nil {
-					// TODO: log
+				if err := mail.Send(sc, m); err != nil {
+					log.Println("[Warning]: Failed to send email To: " + strings.Join(m.GetHeader("To"), ","))
 				}
 
-				fmt.Println("[INFO]: Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
+				log.Println("[INFO]: Email Sent Successfully To: " + strings.Join(m.GetHeader("To"), ","))
 
-			case <-time.After(time.Minute):
+			case <-time.After(timeOut):
 				if open {
 					if err = sc.Close(); err != nil {
-						panic(err)
+						log.Panicln("[ERROR] Failed to close connection", err)
 					}
 					open = false
 				}
@@ -69,7 +81,7 @@ func SendVerificationEmail(e, vc string) {
 
 	// subject
 	var s string
-	s =  "Verify Your Account on WebSentry"
+	s = "Verify Your Account on WebSentry"
 
 	// apply email templates
 	b := new(bytes.Buffer)
@@ -87,14 +99,14 @@ func SendVerificationEmail(e, vc string) {
 	SendEmail(e, s, &bs)
 }
 
-// sendEmail takes an email address, a subject and a pointer of the body message
+// SendEmail takes an email address, a subject and a pointer of the body message
 func SendEmail(e, s string, b *string) {
 
 	if !config.IsReleaseMode() {
 		s = s + " [dev]"
 	}
 
-	m := gomail.NewMessage()
+	m := mail.NewMessage()
 	m.SetHeader("From", c.Email)
 	m.SetHeader("To", e)
 	m.SetHeader("Subject", s)
