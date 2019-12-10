@@ -160,7 +160,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 		up["$set"].(bson.M)["image.file"] = newImage
 	}
 
-	c := mongoDB.Collection("Sentries")
+	c = mongoDB.Collection("Sentries")
 	_, err = c.UpdateOne(nil, bson.M{"_id": id}, up)
 	if err != nil {
 		return err
