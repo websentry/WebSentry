@@ -119,33 +119,27 @@ func GetSentryNotification(id primitive.ObjectID) (nid primitive.ObjectID, err e
 	return
 }
 
-func getSentryInterval(id primitive.ObjectID) (inter int, err error) {
+func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string) error {
 	c := mongoDB.Collection("Sentries")
 
 	var result struct {
-		Interval int `bson:"interval"`
+		Interval   int       `bson:"interval"`
+		CreateTime time.Time `bson:"createTime"`
 	}
-	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
-	if err != nil {
-		return
-	}
-	inter = result.Interval
-	return
-}
 
-func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string) error {
-
-	inter, err := getSentryInterval(id)
+	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
 	if err != nil {
 		return err
 	}
 
 	now := time.Now()
+	t := (int(now.Sub(result.CreateTime).Minutes()) / result.Interval) + 1
+	nextTime := result.CreateTime.Add(time.Minute * time.Duration(t*result.Interval))
 
 	up := bson.M{
 		"$set": bson.M{"lastCheckTime": now,
-			"nextCheckTime": now.Add(time.Minute * time.Duration(inter))},
-		"$inc": bson.M{"checkCount": 1},
+			"nextCheckTime": nextTime,
+			"$inc":          bson.M{"checkCount": 1}},
 	}
 
 	if changed {
@@ -166,7 +160,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 		up["$set"].(bson.M)["image.file"] = newImage
 	}
 
-	c := mongoDB.Collection("Sentries")
+	c = mongoDB.Collection("Sentries")
 	_, err = c.UpdateOne(nil, bson.M{"_id": id}, up)
 	if err != nil {
 		return err
