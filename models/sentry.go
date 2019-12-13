@@ -138,8 +138,8 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 
 	up := bson.M{
 		"$set": bson.M{"lastCheckTime": now,
-			"nextCheckTime": nextTime,
-			"$inc":          bson.M{"checkCount": 1}},
+			"nextCheckTime": nextTime},
+		"$inc": bson.M{"checkCount": 1},
 	}
 
 	if changed {
