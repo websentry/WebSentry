@@ -128,6 +128,7 @@ func SentryInfo(c *gin.Context) {
 
 }
 
+// SentryCreate creates a new sentry
 func SentryCreate(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 
@@ -163,6 +164,18 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
+	var similarityThreshold float64
+	if c.Query("similarityThreshold") == "" {
+		// default value
+		similarityThreshold = 0.9999
+	} else {
+		similarityThreshold, err = strconv.ParseFloat(c.Query("similarityThreshold"), 64)
+		if err != nil {
+			JsonResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
+			return
+		}
+	}
+
 	s := &models.Sentry{}
 	s.Id = primitive.NewObjectID()
 	s.Name = c.Query("name")
@@ -174,6 +187,7 @@ func SentryCreate(c *gin.Context) {
 	s.CheckCount = 0
 	s.NotifyCount = -1 // will be add 1 at the first check
 	s.Image.File = "placeholder"
+	s.Trigger.SimilarityThreshold = similarityThreshold
 	s.Task = gin.H{
 		"url":      u.String(),
 		"timeout":  40000,
@@ -273,7 +287,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 	}
 
 	similarity, _ := utils.ImageCompare(a, b)
-	changed := similarity < 0.9999
+	changed := float64(similarity) < ti.trigger.SimilarityThreshold
 	newImage := ""
 	if changed {
 		// changed

@@ -56,6 +56,7 @@ type taskInfo struct {
 	// sentry
 	sentryId  primitive.ObjectID
 	baseImage *models.SentryImage
+	trigger   *models.Trigger
 }
 
 type taskQueue struct {
@@ -121,6 +122,7 @@ func addSentryTask(s *models.Sentry) int32 {
 	ti.status = taskStatusInQueue
 	ti.sentryId = s.Id
 	ti.baseImage = &s.Image
+	ti.trigger = &s.Trigger
 	ti.expire = time.Now().Add(time.Minute * 5)
 
 	tid := insertTaskinfo(ti)
