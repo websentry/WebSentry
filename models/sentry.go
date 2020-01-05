@@ -14,11 +14,23 @@ type SentryImage struct {
 	File string    `bson:"file" json:"file"`
 }
 
+type Trigger struct {
+	SimilarityThreshold float32 `bson:"similarityThreshold"`
+}
+
+// type SentryMode int
+
+// const (
+// 	SentryModeImageBased SentryMode = 0
+// )
+
 type Sentry struct {
-	Id            primitive.ObjectID     `bson:"_id,omitempty"`
-	Name          string                 `bson:"name"`
+	Id   primitive.ObjectID `bson:"_id,omitempty"`
+	Name string             `bson:"name"`
+	// Mode          SentryMode             `bson:"mode"`
 	User          primitive.ObjectID     `bson:"user"`
 	Notification  primitive.ObjectID     `bson:"notification"`
+	Trigger       Trigger                `bson:"trigger"`
 	CreateTime    time.Time              `bson:"createTime"`
 	LastCheckTime time.Time              `bson:"lastCheckTime"`
 	NextCheckTime time.Time              `bson:"nextCheckTime"`
