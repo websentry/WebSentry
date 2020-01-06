@@ -170,7 +170,7 @@ func SentryCreate(c *gin.Context) {
 		similarityThreshold = 0.9999
 	} else {
 		similarityThreshold, err = strconv.ParseFloat(c.Query("similarityThreshold"), 64)
-		if err != nil {
+		if err != nil || similarityThreshold <= 0 || similarityThreshold > 1 {
 			JsonResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
 			return
 		}
