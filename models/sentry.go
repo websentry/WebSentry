@@ -14,11 +14,25 @@ type SentryImage struct {
 	File string    `bson:"file" json:"file"`
 }
 
+// Trigger struct contains the config of what will trigger a notification
+type Trigger struct {
+	SimilarityThreshold float64 `bson:"similarityThreshold"`
+}
+
+// type SentryMode int
+
+// const (
+// 	SentryModeImageBased SentryMode = 0
+// )
+
+// Sentry struct is the main one for describing a sentry
 type Sentry struct {
-	Id            primitive.ObjectID     `bson:"_id,omitempty"`
-	Name          string                 `bson:"name"`
+	Id   primitive.ObjectID `bson:"_id,omitempty"`
+	Name string             `bson:"name"`
+	// Mode          SentryMode             `bson:"mode"`
 	User          primitive.ObjectID     `bson:"user"`
 	Notification  primitive.ObjectID     `bson:"notification"`
+	Trigger       Trigger                `bson:"trigger"`
 	CreateTime    time.Time              `bson:"createTime"`
 	LastCheckTime time.Time              `bson:"lastCheckTime"`
 	NextCheckTime time.Time              `bson:"nextCheckTime"`
