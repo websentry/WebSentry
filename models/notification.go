@@ -7,7 +7,7 @@ import (
 )
 
 type Notification struct {
-	Id      primitive.ObjectID     `bson:"_id,omitempty" json:"id"`
+	ID      primitive.ObjectID     `bson:"_id,omitempty" json:"id"`
 	Name    string                 `bson:"name" json:"name"`
 	User    primitive.ObjectID     `bson:"user" json:"-"`
 	Type    string                 `bson:"type" json:"type"`
@@ -35,7 +35,7 @@ func NotificationAddEmail(user primitive.ObjectID, email string, name string) (e
 
 func NotificationAddServerChan(name string, user primitive.ObjectID, sckey string) (id primitive.ObjectID, err error) {
 	n := &Notification{
-		Id:      primitive.NewObjectID(),
+		ID:      primitive.NewObjectID(),
 		Name:    name,
 		User:    user,
 		Type:    "serverchan",
@@ -44,7 +44,7 @@ func NotificationAddServerChan(name string, user primitive.ObjectID, sckey strin
 
 	_, err = mongoDB.Collection("Notifications").InsertOne(nil, n)
 	if err == nil {
-		id = n.Id
+		id = n.ID
 	}
 	return
 }

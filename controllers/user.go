@@ -40,7 +40,7 @@ func UserInfo(c *gin.Context) {
 		panic(err)
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"email": result.Email,
 	})
 	return
@@ -52,12 +52,12 @@ func UserLogin(c *gin.Context) {
 	gPassword := c.DefaultPostForm("password", "")
 
 	if isFieldInvalid(gEmail, emailField) {
-		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
 	if isFieldInvalid(gPassword, passwordField) {
-		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
@@ -67,7 +67,7 @@ func UserLogin(c *gin.Context) {
 		panic(err)
 	}
 	if !userExist {
-		JsonResponse(c, CodeNotExist, "sign up required", nil)
+		JSONResponse(c, CodeNotExist, "sign up required", nil)
 		return
 	}
 
@@ -79,11 +79,11 @@ func UserLogin(c *gin.Context) {
 	}
 
 	if !models.CheckPassword(gPassword, result.Password) {
-		JsonResponse(c, CodeAuthError, "incorrect email/password", nil)
+		JSONResponse(c, CodeAuthError, "incorrect email/password", nil)
 		return
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"token": utils.TokenGenerate(result.ID.Hex()),
 	})
 }
@@ -94,7 +94,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	// TODO: email check
 	if isFieldInvalid(gEmail, emailField) {
-		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
@@ -104,7 +104,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		panic(err)
 	}
 	if userAlreadyExist {
-		JsonResponse(c, CodeAlreadyExist, "", nil)
+		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
@@ -117,7 +117,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	if userVerificationExist {
 		// verfication code still valid
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"generated": false,
 		})
 	} else {
@@ -138,7 +138,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		// or it expires
 		utils.SendVerificationEmail(gEmail, verificationCode)
 
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"generated": true,
 		})
 	}
@@ -151,17 +151,17 @@ func UserCreateWithVerification(c *gin.Context) {
 	gVerificationCode := c.DefaultQuery("verification", "")
 
 	if isFieldInvalid(gEmail, emailField) {
-		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
 	if isFieldInvalid(gPassword, passwordField) {
-		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
 	if isFieldInvalid(gVerificationCode, verficationCodeField) {
-		JsonResponse(c, CodeWrongParam, "Verification format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Verification format is invalid", nil)
 		return
 	}
 
@@ -172,7 +172,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	if userExist {
-		JsonResponse(c, CodeAlreadyExist, "", nil)
+		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
@@ -183,7 +183,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	if !userVerificationExist {
-		JsonResponse(c, CodeOK, "", nil)
+		JSONResponse(c, CodeOK, "", nil)
 		return
 	}
 
@@ -203,7 +203,7 @@ func UserCreateWithVerification(c *gin.Context) {
 			panic(err)
 		}
 
-		JsonResponse(c, CodeAuthError, "exceed trying limit", gin.H{
+		JSONResponse(c, CodeAuthError, "exceed trying limit", gin.H{
 			"expired": true,
 		})
 		return
@@ -220,7 +220,7 @@ func UserCreateWithVerification(c *gin.Context) {
 			panic(err)
 		}
 
-		JsonResponse(c, CodeAuthError, "incorrect verification code", gin.H{
+		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
 			"expired": false,
 		})
 		return
@@ -252,7 +252,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	JsonResponse(c, CodeOK, "", nil)
+	JSONResponse(c, CodeOK, "", nil)
 }
 
 // generateVerificationCode outputs a random 6-digit code

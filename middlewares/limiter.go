@@ -13,14 +13,14 @@ import (
 )
 
 func limitReachedHandler(c *gin.Context) {
-	controllers.JsonResponse(c, controllers.CodeExceededLimits, "limiter", nil)
+	controllers.JSONResponse(c, controllers.CodeExceededLimits, "limiter", nil)
 }
 
-func keyGetterIp(c *gin.Context) string {
+func keyGetterIP(c *gin.Context) string {
 	return c.ClientIP()
 }
 
-func keyGetterUserId(c *gin.Context) string {
+func keyGetterUserID(c *gin.Context) string {
 	return c.MustGet("userId").(primitive.ObjectID).Hex()
 }
 
@@ -33,7 +33,7 @@ func GetSensitiveLimiter() gin.HandlerFunc {
 		Limit:  500,
 	}
 	options := []limitergin.Option{
-		limitergin.WithKeyGetter(keyGetterIp),
+		limitergin.WithKeyGetter(keyGetterIP),
 		limitergin.WithLimitReachedHandler(limitReachedHandler),
 	}
 	return limitergin.NewMiddleware(limiter.New(store, rate), options...)
@@ -46,7 +46,7 @@ func GetGeneralLimiter() gin.HandlerFunc {
 		Limit:  1000,
 	}
 	options := []limitergin.Option{
-		limitergin.WithKeyGetter(keyGetterUserId),
+		limitergin.WithKeyGetter(keyGetterUserID),
 		limitergin.WithLimitReachedHandler(limitReachedHandler),
 	}
 	return limitergin.NewMiddleware(limiter.New(store, rate), options...)
@@ -59,7 +59,7 @@ func GetScreenshotLimiter() gin.HandlerFunc {
 		Limit:  20,
 	}
 	options := []limitergin.Option{
-		limitergin.WithKeyGetter(keyGetterUserId),
+		limitergin.WithKeyGetter(keyGetterUserID),
 		limitergin.WithLimitReachedHandler(limitReachedHandler),
 	}
 	return limitergin.NewMiddleware(limiter.New(store, rate), options...)
@@ -72,7 +72,7 @@ func GetSlaveLimiter() gin.HandlerFunc {
 		Limit:  5000,
 	}
 	options := []limitergin.Option{
-		limitergin.WithKeyGetter(keyGetterIp),
+		limitergin.WithKeyGetter(keyGetterIP),
 		limitergin.WithLimitReachedHandler(limitReachedHandler),
 	}
 	return limitergin.NewMiddleware(limiter.New(store, rate), options...)

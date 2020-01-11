@@ -15,9 +15,9 @@ import (
 	"github.com/websentry/websentry/utils"
 )
 
-func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old string, new string, similarity float32) error {
-	nid, err := models.GetSentryNotification(sentryId)
-	name, _ := models.GetSentryName(sentryId)
+func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old string, new string, similarity float32) error {
+	nid, err := models.GetSentryNotification(sentryID)
+	name, _ := models.GetSentryName(sentryID)
 	if err != nil {
 		return err
 	}
@@ -31,8 +31,8 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 		"name":        name,
 		"beforeTime":  lasttime.Format("2006-01-02 15:04"),
 		"currentTime": time.Now().Format("2006-01-02 15:04"),
-		"beforeImage": config.GetBackendUrl() + "v1/common/get_history_image?filename=" + old,
-		"afterImage":  config.GetBackendUrl() + "v1/common/get_history_image?filename=" + new,
+		"beforeImage": config.GetBackendURL() + "v1/common/get_history_image?filename=" + old,
+		"afterImage":  config.GetBackendURL() + "v1/common/get_history_image?filename=" + new,
 		"similarity":  fmt.Sprintf("%.2f%%", similarity*100),
 	}
 
@@ -90,7 +90,7 @@ func NotificationList(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"notifications": results,
 	})
 }
@@ -106,7 +106,7 @@ func NotificationAddServerChan(c *gin.Context) {
 		panic(err)
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"notificationId": id,
 	})
 }

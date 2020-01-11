@@ -27,21 +27,21 @@ func UserAuthRequired(c *gin.Context) {
 		case utils.ErrorTokenRequired:
 			detail = "Token is required"
 		}
-		controllers.JsonResponse(c, controllers.CodeAuthError, detail, nil)
+		controllers.JSONResponse(c, controllers.CodeAuthError, detail, nil)
 		c.Abort()
 	} else {
 		if u != "" {
 			// success
-			bsonId, err := primitive.ObjectIDFromHex(u)
+			bsonID, err := primitive.ObjectIDFromHex(u)
 			if err != nil {
-				controllers.JsonResponse(c, controllers.CodeAuthError, "Uid is invalid", nil)
+				controllers.JSONResponse(c, controllers.CodeAuthError, "Uid is invalid", nil)
 				c.Abort()
 			}
 
-			c.Set("userId", bsonId)
+			c.Set("userId", bsonID)
 			c.Next()
 		} else {
-			controllers.JsonResponse(c, controllers.CodeAuthError, "Uid can not be empty", nil)
+			controllers.JSONResponse(c, controllers.CodeAuthError, "Uid can not be empty", nil)
 			c.Abort()
 		}
 	}

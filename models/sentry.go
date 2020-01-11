@@ -27,7 +27,7 @@ type Trigger struct {
 
 // Sentry struct is the main one for describing a sentry
 type Sentry struct {
-	Id   primitive.ObjectID `bson:"_id,omitempty"`
+	ID   primitive.ObjectID `bson:"_id,omitempty"`
 	Name string             `bson:"name"`
 	// Mode          SentryMode             `bson:"mode"`
 	User          primitive.ObjectID     `bson:"user"`
@@ -44,7 +44,7 @@ type Sentry struct {
 }
 
 type ImageHistory struct {
-	Id     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
+	ID     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
 	Images []SentryImage      `bson:"images" json:"images"`
 }
 
@@ -87,7 +87,7 @@ func GetSentry(id primitive.ObjectID) (*Sentry, error) {
 func AddSentry(s *Sentry) error {
 	// insert doc containing "foreign key" first
 	_, err := mongoDB.Collection("ImageHistories").InsertOne(nil, &ImageHistory{
-		Id:     s.Id,
+		ID:     s.ID,
 		Images: []SentryImage{},
 	})
 	if err != nil {

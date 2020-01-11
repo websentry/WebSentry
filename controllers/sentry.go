@@ -22,7 +22,7 @@ import (
 func SentryRequestFullScreenshot(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
-		JsonResponse(c, CodeWrongParam, "Wrong protocol", nil)
+		JSONResponse(c, CodeWrongParam, "Wrong protocol", nil)
 		return
 	}
 
@@ -45,7 +45,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 
 	id := addFullScreenshotTask(task, c.MustGet("userId").(primitive.ObjectID))
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"taskId": id,
 	})
 }
@@ -62,20 +62,20 @@ func SentryList(c *gin.Context) {
 	}
 
 	sentries := make([]struct {
-		Id            primitive.ObjectID `json:"id"`
+		ID            primitive.ObjectID `json:"id"`
 		Name          string             `json:"name"`
-		Url           string             `json:"url"`
+		URL           string             `json:"url"`
 		LastCheckTime time.Time          `json:"lastCheckTime"`
 	}, len(results))
 
 	for i := range results {
 		sentries[i].Name = results[i].Name
-		sentries[i].Id = results[i].Id
-		sentries[i].Url = results[i].Task["url"].(string)
+		sentries[i].ID = results[i].ID
+		sentries[i].URL = results[i].Task["url"].(string)
 		sentries[i].LastCheckTime = results[i].LastCheckTime
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"sentries": sentries,
 	})
 }
@@ -83,13 +83,13 @@ func SentryList(c *gin.Context) {
 func SentryInfo(c *gin.Context) {
 	id, err := primitive.ObjectIDFromHex(c.Query("id"))
 	if err != nil {
-		JsonResponse(c, CodeWrongParam, "Wrong sentry id", nil)
+		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
 		return
 	}
 
 	s, err := models.GetSentry(id)
 	if models.IsErrNoDocument(err) || s.User != c.MustGet("userId").(primitive.ObjectID) {
-		JsonResponse(c, CodeNotExist, "", nil)
+		JSONResponse(c, CodeNotExist, "", nil)
 		return
 	}
 	if err != nil {
@@ -106,8 +106,8 @@ func SentryInfo(c *gin.Context) {
 		panic(err)
 	}
 
-	sentryJson := struct {
-		Id            primitive.ObjectID     `json:"id"`
+	sentryJSON := struct {
+		ID            primitive.ObjectID     `json:"id"`
 		Name          string                 `json:"name"`
 		Notification  *models.Notification   `json:"notification"`
 		CreateTime    time.Time              `json:"createTime"`
@@ -119,12 +119,12 @@ func SentryInfo(c *gin.Context) {
 		ImageHistory  *models.ImageHistory   `json:"imageHistory"`
 		Task          map[string]interface{} `json:"task"`
 	}{
-		s.Id, s.Name, notification, s.CreateTime, s.LastCheckTime,
+		s.ID, s.Name, notification, s.CreateTime, s.LastCheckTime,
 		s.Interval, s.CheckCount, s.NotifyCount, &s.Image,
 		imageHistory, s.Task,
 	}
 
-	JsonResponse(c, CodeOK, "", sentryJson)
+	JSONResponse(c, CodeOK, "", sentryJSON)
 
 }
 
@@ -133,19 +133,19 @@ func SentryCreate(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
-		JsonResponse(c, CodeWrongParam, "Wrong protocol", nil)
+		JSONResponse(c, CodeWrongParam, "Wrong protocol", nil)
 		return
 	}
 
 	notification, err := primitive.ObjectIDFromHex(c.Query("notification"))
 
 	if err != nil {
-		JsonResponse(c, CodeWrongParam, "Wrong notificationId", nil)
+		JSONResponse(c, CodeWrongParam, "Wrong notificationId", nil)
 		return
 	}
 
 	if !models.NotificationCheckOwner(notification, c.MustGet("userId").(primitive.ObjectID)) {
-		JsonResponse(c, CodeNotExist, "notification does not exist", nil)
+		JSONResponse(c, CodeNotExist, "notification does not exist", nil)
 		return
 	}
 
@@ -155,12 +155,12 @@ func SentryCreate(c *gin.Context) {
 	height, _ := strconv.ParseInt(c.Query("height"), 10, 32)
 
 	if !(x >= 0 && y >= 0 && width > 0 && height > 0) {
-		JsonResponse(c, CodeWrongParam, "Wrong area", nil)
+		JSONResponse(c, CodeWrongParam, "Wrong area", nil)
 		return
 	}
 
 	if width*height > 500*500 {
-		JsonResponse(c, CodeAreaTooLarge, "", nil)
+		JSONResponse(c, CodeAreaTooLarge, "", nil)
 		return
 	}
 
@@ -171,13 +171,13 @@ func SentryCreate(c *gin.Context) {
 	} else {
 		similarityThreshold, err = strconv.ParseFloat(c.Query("similarityThreshold"), 64)
 		if err != nil || similarityThreshold <= 0 || similarityThreshold > 1 {
-			JsonResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
+			JSONResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
 			return
 		}
 	}
 
 	s := &models.Sentry{}
-	s.Id = primitive.NewObjectID()
+	s.ID = primitive.NewObjectID()
 	s.Name = c.Query("name")
 	s.User = c.MustGet("userId").(primitive.ObjectID)
 	s.Notification = notification
@@ -212,8 +212,8 @@ func SentryCreate(c *gin.Context) {
 		panic(err)
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
-		"sentryId": s.Id.Hex(),
+	JSONResponse(c, CodeOK, "", gin.H{
+		"sentryId": s.ID.Hex(),
 	})
 }
 
@@ -270,7 +270,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 
 		imageFilename := utils.ImageSave(b)
 
-		err := models.UpdateSentryAfterCheck(ti.sentryId, true, imageFilename)
+		err := models.UpdateSentryAfterCheck(ti.sentryID, true, imageFilename)
 
 		if err != nil {
 			utils.ImageDelete(imageFilename, false)
@@ -295,18 +295,18 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		newImage = utils.ImageSave(b)
 	}
 
-	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryId.Hex(), similarity*100, changed)
+	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryID.Hex(), similarity*100, changed)
 
-	err = models.UpdateSentryAfterCheck(ti.sentryId, changed, newImage)
+	err = models.UpdateSentryAfterCheck(ti.sentryID, changed, newImage)
 
 	if changed {
 		if err == nil {
 			// success
 
 			// notification
-			e := toggleNotification(ti.sentryId, ti.baseImage.Time, ti.baseImage.File, newImage, similarity)
+			e := toggleNotification(ti.sentryID, ti.baseImage.Time, ti.baseImage.File, newImage, similarity)
 			if e != nil {
-				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v \n", ti.sentryId.Hex(), e)
+				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v \n", ti.sentryID.Hex(), e)
 			}
 
 			// delete old file (keep thumb)
