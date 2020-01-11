@@ -7,16 +7,16 @@ import (
 )
 
 type Config struct {
-	ReleaseMode              bool              `json:"releaseMode"`
-	Addr                     string            `json:"addr"`
-	Mongodb                  Mongodb           `json:"mongodb"`
-	VerificationEmail        VerificationEmail `json:"verificationEmail"`
-	FileStoragePath          string            `json:"fileStoragePath"`
-	SlaveKey                 string            `json:"slaveKey"`
-	TokenSecretKey           string            `json:"tokenSecretKey"`
-	BackendUrl               string            `json:"backendUrl"`
-	CROSAllowOrigins 		 []string          `json:"crosAllowOrigins"`
-	ForwardedByClientIP      bool              `json:"forwardedByClientIP"`
+	ReleaseMode         bool              `json:"releaseMode"`
+	Addr                string            `json:"addr"`
+	Mongodb             Mongodb           `json:"mongodb"`
+	VerificationEmail   VerificationEmail `json:"verificationEmail"`
+	FileStoragePath     string            `json:"fileStoragePath"`
+	SlaveKey            string            `json:"slaveKey"`
+	TokenSecretKey      string            `json:"tokenSecretKey"`
+	BackendUrl          string            `json:"backendUrl"`
+	CROSAllowOrigins    []string          `json:"crosAllowOrigins"`
+	ForwardedByClientIP bool              `json:"forwardedByClientIP"`
 }
 
 type Mongodb struct {

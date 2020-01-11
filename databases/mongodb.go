@@ -9,10 +9,14 @@ import (
 
 func ConnectToMongoDB(dbConfig config.Mongodb) (*mongo.Database, error) {
 	client, err := mongo.NewClient(options.Client().ApplyURI(dbConfig.Url))
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	err = client.Connect(nil)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	return client.Database(dbConfig.Database), nil
 }

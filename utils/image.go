@@ -41,7 +41,7 @@ func ImageRandomFilename() string {
 	for {
 		filename = RandStringBytes(32)
 
-		fullFilename := path.Join(imageThumbBasePath, filename + ".jpg")
+		fullFilename := path.Join(imageThumbBasePath, filename+".jpg")
 		_, err := os.Stat(fullFilename)
 		if os.IsNotExist(err) {
 			break
@@ -63,9 +63,9 @@ func ImageCheckFilename(filename string) bool {
 // need check filename if the filename comes from user
 func ImageGetFullPath(filename string, thumb bool) string {
 	if thumb {
-		return path.Join(imageThumbBasePath, filename + ".jpg")
+		return path.Join(imageThumbBasePath, filename+".jpg")
 	} else {
-		return path.Join(imageBasePath, filename + ".png")
+		return path.Join(imageBasePath, filename+".png")
 	}
 }
 
@@ -100,7 +100,7 @@ func ImageCompare(a image.Image, b image.Image) (float32, error) {
 			total += 3
 		}
 	}
-	return 1 - float32(v / float64(total)), nil
+	return 1 - float32(v/float64(total)), nil
 }
 
 func ImageSave(image image.Image) string {

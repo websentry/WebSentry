@@ -29,8 +29,8 @@ func keyGetterUserId(c *gin.Context) string {
 func GetSensitiveLimiter() gin.HandlerFunc {
 	store := memory.NewStore()
 	rate := limiter.Rate{
-		Period:    1 * time.Hour,
-		Limit:     500,
+		Period: 1 * time.Hour,
+		Limit:  500,
 	}
 	options := []limitergin.Option{
 		limitergin.WithKeyGetter(keyGetterIp),
@@ -42,8 +42,8 @@ func GetSensitiveLimiter() gin.HandlerFunc {
 func GetGeneralLimiter() gin.HandlerFunc {
 	store := memory.NewStore()
 	rate := limiter.Rate{
-		Period:    1 * time.Hour,
-		Limit:     1000,
+		Period: 1 * time.Hour,
+		Limit:  1000,
 	}
 	options := []limitergin.Option{
 		limitergin.WithKeyGetter(keyGetterUserId),
@@ -55,8 +55,8 @@ func GetGeneralLimiter() gin.HandlerFunc {
 func GetScreenshotLimiter() gin.HandlerFunc {
 	store := memory.NewStore()
 	rate := limiter.Rate{
-		Period:    1 * time.Hour,
-		Limit:     20,
+		Period: 1 * time.Hour,
+		Limit:  20,
 	}
 	options := []limitergin.Option{
 		limitergin.WithKeyGetter(keyGetterUserId),
@@ -68,8 +68,8 @@ func GetScreenshotLimiter() gin.HandlerFunc {
 func GetSlaveLimiter() gin.HandlerFunc {
 	store := memory.NewStore()
 	rate := limiter.Rate{
-		Period:    1 * time.Hour,
-		Limit:     5000,
+		Period: 1 * time.Hour,
+		Limit:  5000,
 	}
 	options := []limitergin.Option{
 		limitergin.WithKeyGetter(keyGetterIp),

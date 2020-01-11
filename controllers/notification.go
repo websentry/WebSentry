@@ -28,12 +28,12 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 	// TODO: url
 
 	data := map[string]string{
-		"name": name,
-		"beforeTime": lasttime.Format("2006-01-02 15:04"),
+		"name":        name,
+		"beforeTime":  lasttime.Format("2006-01-02 15:04"),
 		"currentTime": time.Now().Format("2006-01-02 15:04"),
-		"beforeImage": config.GetBackendUrl() + "v1/common/get_history_image?filename="+old,
-		"afterImage": config.GetBackendUrl() + "v1/common/get_history_image?filename="+new,
-		"similarity": fmt.Sprintf("%.2f%%", similarity * 100),
+		"beforeImage": config.GetBackendUrl() + "v1/common/get_history_image?filename=" + old,
+		"afterImage":  config.GetBackendUrl() + "v1/common/get_history_image?filename=" + new,
+		"similarity":  fmt.Sprintf("%.2f%%", similarity*100),
 	}
 
 	title := name + ": change detected"
@@ -65,7 +65,6 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 
 	} else if n.Type == "email" {
 
-
 		// apply email templates
 		b := &bytes.Buffer{}
 
@@ -86,10 +85,9 @@ func toggleNotification(sentryId primitive.ObjectID, lasttime time.Time, old str
 	return nil
 }
 
-
 func NotificationList(c *gin.Context) {
 	results, err := models.NotificationList(c.MustGet("userId").(primitive.ObjectID))
-	if err!=nil {
+	if err != nil {
 		panic(err)
 	}
 	JsonResponse(c, CodeOK, "", gin.H{
@@ -104,7 +102,7 @@ func NotificationAddServerChan(c *gin.Context) {
 
 	id, err := models.NotificationAddServerChan(name, user, sckey)
 
-	if err!=nil {
+	if err != nil {
 		panic(err)
 	}
 

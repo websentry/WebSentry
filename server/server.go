@@ -14,10 +14,14 @@ import (
 func Init() {
 
 	db, err := databases.ConnectToMongoDB(config.GetMongodbConfig())
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	err = models.Init(db)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	controllers.Init()
 
@@ -29,5 +33,7 @@ func Init() {
 
 	r.ForwardedByClientIP = config.IsForwardedByClientIP()
 	err = r.Run(config.GetAddr())
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 }

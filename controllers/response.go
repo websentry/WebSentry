@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const(
+const (
 	CodeOK         = 0
 	CodeAuthError  = -1
 	CodeWrongParam = -2
@@ -18,9 +18,9 @@ const(
 	CodeAreaTooLarge = -1001
 )
 
-var msgMap = map[int]string {
+var msgMap = map[int]string{
 	// common
-	0: "OK",
+	0:  "OK",
 	-1: "Authorization error",
 	-2: "Wrong parameter",
 

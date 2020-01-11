@@ -7,10 +7,10 @@ import (
 )
 
 type Notification struct {
-	Id primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name string `bson:"name" json:"name"`
-	User primitive.ObjectID `bson:"user" json:"-"`
-	Type string `bson:"type" json:"type"`
+	Id      primitive.ObjectID     `bson:"_id,omitempty" json:"id"`
+	Name    string                 `bson:"name" json:"name"`
+	User    primitive.ObjectID     `bson:"user" json:"-"`
+	Type    string                 `bson:"type" json:"type"`
 	Setting map[string]interface{} `bson:"setting" json:"setting"`
 }
 
@@ -33,12 +33,12 @@ func NotificationAddEmail(user primitive.ObjectID, email string, name string) (e
 	return
 }
 
-func NotificationAddServerChan(name string, user primitive.ObjectID, sckey string) (id primitive.ObjectID, err error){
+func NotificationAddServerChan(name string, user primitive.ObjectID, sckey string) (id primitive.ObjectID, err error) {
 	n := &Notification{
-		Id: primitive.NewObjectID(),
-		Name: name,
-		User: user,
-		Type: "serverchan",
+		Id:      primitive.NewObjectID(),
+		Name:    name,
+		User:    user,
+		Type:    "serverchan",
 		Setting: gin.H{"sckey": sckey},
 	}
 
@@ -50,7 +50,9 @@ func NotificationAddServerChan(name string, user primitive.ObjectID, sckey strin
 }
 
 func NotificationCheckOwner(id primitive.ObjectID, user primitive.ObjectID) bool {
-	var result struct{ User primitive.ObjectID `bson:"user"` }
+	var result struct {
+		User primitive.ObjectID `bson:"user"`
+	}
 
 	err := mongoDB.Collection("Notifications").FindOne(nil, bson.M{"_id": id}).Decode(&result)
 	if err == nil && result.User == user {
@@ -66,6 +68,3 @@ func NotificationList(user primitive.ObjectID) (results []Notification, err erro
 	}
 	return
 }
-
-
-
