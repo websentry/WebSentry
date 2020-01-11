@@ -23,8 +23,14 @@ func init() {
 	imageBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "orig")
 	imageThumbBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "thumb")
 
-	os.MkdirAll(imageBasePath, os.ModePerm)
-	os.MkdirAll(imageThumbBasePath, os.ModePerm)
+	err := os.MkdirAll(imageBasePath, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	err = os.MkdirAll(imageThumbBasePath, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func RandStringBytes(n int) string {
@@ -103,12 +109,18 @@ func ImageCompare(a image.Image, b image.Image) (float32, error) {
 	return 1 - float32(v/float64(total)), nil
 }
 
-func ImageSave(image image.Image) string {
+func ImageSave(image image.Image) (string, error) {
 	filename := ImageRandomFilename()
 
-	imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	err := imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	if err != nil {
+		return "", err
+	}
 	// thumb
-	imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
+	err = imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
+	if err != nil {
+		return "", err
+	}
 
-	return filename
+	return filename, nil
 }

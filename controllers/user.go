@@ -43,7 +43,6 @@ func UserInfo(c *gin.Context) {
 	JSONResponse(c, CodeOK, "", gin.H{
 		"email": result.Email,
 	})
-	return
 }
 
 // UserLogin takes email and password and generate login token if succeed
@@ -122,7 +121,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		})
 	} else {
 		verificationCode = generateVerificationCode()
-		_, err = models.GetUserVerificationCollection().InsertOne(nil, &models.UserVerification{
+		_, err = models.GetUserVerificationCollection().InsertOne(c, &models.UserVerification{
 			Email:            gEmail,
 			VerificationCode: verificationCode,
 			RemainingCount:   maxVerificationCodeTryCount,
@@ -196,7 +195,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// exceed the trying limit
 	if result.RemainingCount <= 0 {
-		_, err = models.GetUserVerificationCollection().DeleteOne(nil,
+		_, err = models.GetUserVerificationCollection().DeleteOne(c,
 			bson.M{"email": gEmail},
 		)
 		if err != nil {
@@ -212,7 +211,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	// incorrect verification code
 	if result.VerificationCode != gVerificationCode {
 		// reduce remaining trying count
-		_, err = models.GetUserVerificationCollection().UpdateOne(nil,
+		_, err = models.GetUserVerificationCollection().UpdateOne(c,
 			bson.M{"email": gEmail},
 			bson.M{"$inc": bson.M{"remainingCount": -1}},
 		)
@@ -241,7 +240,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	_, err = models.GetUserCollection().InsertOne(nil, &models.User{
+	_, err = models.GetUserCollection().InsertOne(c, &models.User{
 		ID:          userID,
 		Email:       gEmail,
 		Password:    hash,

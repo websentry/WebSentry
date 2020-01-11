@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	secretLength   = 256
 	expireDuration = time.Hour * 24 * 30
 )
 

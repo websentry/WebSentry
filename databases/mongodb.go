@@ -1,6 +1,8 @@
 package databases
 
 import (
+	"context"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -13,7 +15,7 @@ func ConnectToMongoDB(dbConfig config.Mongodb) (*mongo.Database, error) {
 		return nil, err
 	}
 
-	err = client.Connect(nil)
+	err = client.Connect(context.Background())
 	if err != nil {
 		return nil, err
 	}

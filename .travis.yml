@@ -16,5 +16,9 @@ git:
 notifications:
   email: false
 
+before_script:
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.22.2
+
 script:
   - go test -v ./...
+  - golangci-lint run

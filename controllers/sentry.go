@@ -268,9 +268,12 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 	// first time
 	if ti.baseImage.File == "placeholder" {
 
-		imageFilename := utils.ImageSave(b)
+		imageFilename, err := utils.ImageSave(b)
+		if err != nil {
+			return err
+		}
 
-		err := models.UpdateSentryAfterCheck(ti.sentryID, true, imageFilename)
+		err = models.UpdateSentryAfterCheck(ti.sentryID, true, imageFilename)
 
 		if err != nil {
 			utils.ImageDelete(imageFilename, false)
@@ -292,7 +295,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 	if changed {
 		// changed
 		// save new image
-		newImage = utils.ImageSave(b)
+		newImage, _ = utils.ImageSave(b)
 	}
 
 	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryID.Hex(), similarity*100, changed)

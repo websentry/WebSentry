@@ -1,6 +1,8 @@
 package models
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +20,7 @@ func GetNotification(id primitive.ObjectID) (*Notification, error) {
 	c := mongoDB.Collection("Notifications")
 
 	var result Notification
-	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	return &result, err
 }
 
@@ -29,7 +31,7 @@ func NotificationAddEmail(user primitive.ObjectID, email string, name string) (e
 	n.Type = "email"
 	n.Setting = gin.H{"email": email}
 
-	_, err = mongoDB.Collection("Notifications").InsertOne(nil, n)
+	_, err = mongoDB.Collection("Notifications").InsertOne(context.TODO(), n)
 	return
 }
 
@@ -42,7 +44,7 @@ func NotificationAddServerChan(name string, user primitive.ObjectID, sckey strin
 		Setting: gin.H{"sckey": sckey},
 	}
 
-	_, err = mongoDB.Collection("Notifications").InsertOne(nil, n)
+	_, err = mongoDB.Collection("Notifications").InsertOne(context.TODO(), n)
 	if err == nil {
 		id = n.ID
 	}
@@ -54,7 +56,7 @@ func NotificationCheckOwner(id primitive.ObjectID, user primitive.ObjectID) bool
 		User primitive.ObjectID `bson:"user"`
 	}
 
-	err := mongoDB.Collection("Notifications").FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err := mongoDB.Collection("Notifications").FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	if err == nil && result.User == user {
 		return true
 	}
@@ -62,7 +64,7 @@ func NotificationCheckOwner(id primitive.ObjectID, user primitive.ObjectID) bool
 }
 
 func NotificationList(user primitive.ObjectID) (results []Notification, err error) {
-	cur, err := mongoDB.Collection("Notifications").Find(nil, bson.M{"user": user})
+	cur, err := mongoDB.Collection("Notifications").Find(context.TODO(), bson.M{"user": user})
 	if err == nil {
 		err = getAllFromCursor(cur, &results)
 	}
