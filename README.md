@@ -2,7 +2,7 @@
 
 [![GitHub](https://img.shields.io/github/license/websentry/WebSentry.svg)](https://github.com/websentry/WebSentry/blob/master/LICENSE)
 [![GitHub contributors](https://img.shields.io/github/contributors/websentry/WebSentry.svg)](https://github.com/websentry/WebSentry/graphs/contributors)
-[![Build Status](https://travis-ci.com/websentry/WebSentry.svg?branch=master)](https://travis-ci.com/websentry/WebSentry)
+[![Build Status](https://github.com/websentry/WebSentry/workflows/build/badge.svg?branch=master)](https://github.com/websentry/WebSentry/actions/)
 
 
 
