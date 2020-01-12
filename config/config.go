@@ -7,20 +7,20 @@ import (
 )
 
 type Config struct {
-	ReleaseMode              bool              `json:"releaseMode"`
-	Addr                     string            `json:"addr"`
-	Mongodb                  Mongodb           `json:"mongodb"`
-	VerificationEmail        VerificationEmail `json:"verificationEmail"`
-	FileStoragePath          string            `json:"fileStoragePath"`
-	SlaveKey                 string            `json:"slaveKey"`
-	TokenSecretKey           string            `json:"tokenSecretKey"`
-	BackendUrl               string            `json:"backendUrl"`
-	CROSAllowOrigins 		 []string          `json:"crosAllowOrigins"`
-	ForwardedByClientIP      bool              `json:"forwardedByClientIP"`
+	ReleaseMode         bool              `json:"releaseMode"`
+	Addr                string            `json:"addr"`
+	Mongodb             Mongodb           `json:"mongodb"`
+	VerificationEmail   VerificationEmail `json:"verificationEmail"`
+	FileStoragePath     string            `json:"fileStoragePath"`
+	SlaveKey            string            `json:"slaveKey"`
+	TokenSecretKey      string            `json:"tokenSecretKey"`
+	BackendURL          string            `json:"backendUrl"`
+	CROSAllowOrigins    []string          `json:"crosAllowOrigins"`
+	ForwardedByClientIP bool              `json:"forwardedByClientIP"`
 }
 
 type Mongodb struct {
-	Url      string `json:"url"`
+	URL      string `json:"url"`
 	Database string `json:"database"`
 }
 
@@ -75,8 +75,8 @@ func GetTokenSecretKey() string {
 	return config.TokenSecretKey
 }
 
-func GetBackendUrl() string {
-	return config.BackendUrl
+func GetBackendURL() string {
+	return config.BackendURL
 }
 
 func GetCROSAllowOrigins() []string {

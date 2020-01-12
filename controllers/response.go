@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const(
+const (
 	CodeOK         = 0
 	CodeAuthError  = -1
 	CodeWrongParam = -2
@@ -18,9 +18,9 @@ const(
 	CodeAreaTooLarge = -1001
 )
 
-var msgMap = map[int]string {
+var msgMap = map[int]string{
 	// common
-	0: "OK",
+	0:  "OK",
 	-1: "Authorization error",
 	-2: "Wrong parameter",
 
@@ -33,7 +33,7 @@ var msgMap = map[int]string {
 	-1001: "Area too large",
 }
 
-func JsonResponse(c *gin.Context, code int, detail string, data interface{}) {
+func JSONResponse(c *gin.Context, code int, detail string, data interface{}) {
 	json := gin.H{}
 	json["code"] = code
 	json["msg"] = msgMap[code]

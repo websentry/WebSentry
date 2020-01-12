@@ -40,10 +40,9 @@ func UserInfo(c *gin.Context) {
 		panic(err)
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"email": result.Email,
 	})
-	return
 }
 
 // UserLogin takes email and password and generate login token if succeed
@@ -52,12 +51,12 @@ func UserLogin(c *gin.Context) {
 	gPassword := c.DefaultPostForm("password", "")
 
 	if isFieldInvalid(gEmail, emailField) {
-		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
 	if isFieldInvalid(gPassword, passwordField) {
-		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
@@ -67,7 +66,7 @@ func UserLogin(c *gin.Context) {
 		panic(err)
 	}
 	if !userExist {
-		JsonResponse(c, CodeNotExist, "sign up required", nil)
+		JSONResponse(c, CodeNotExist, "sign up required", nil)
 		return
 	}
 
@@ -79,11 +78,11 @@ func UserLogin(c *gin.Context) {
 	}
 
 	if !models.CheckPassword(gPassword, result.Password) {
-		JsonResponse(c, CodeAuthError, "incorrect email/password", nil)
+		JSONResponse(c, CodeAuthError, "incorrect email/password", nil)
 		return
 	}
 
-	JsonResponse(c, CodeOK, "", gin.H{
+	JSONResponse(c, CodeOK, "", gin.H{
 		"token": utils.TokenGenerate(result.ID.Hex()),
 	})
 }
@@ -94,7 +93,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	// TODO: email check
 	if isFieldInvalid(gEmail, emailField) {
-		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
@@ -104,7 +103,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		panic(err)
 	}
 	if userAlreadyExist {
-		JsonResponse(c, CodeAlreadyExist, "", nil)
+		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
@@ -117,12 +116,12 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	if userVerificationExist {
 		// verfication code still valid
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"generated": false,
 		})
 	} else {
 		verificationCode = generateVerificationCode()
-		_, err = models.GetUserVerificationCollection().InsertOne(nil, &models.UserVerification{
+		_, err = models.GetUserVerificationCollection().InsertOne(c, &models.UserVerification{
 			Email:            gEmail,
 			VerificationCode: verificationCode,
 			RemainingCount:   maxVerificationCodeTryCount,
@@ -138,7 +137,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		// or it expires
 		utils.SendVerificationEmail(gEmail, verificationCode)
 
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"generated": true,
 		})
 	}
@@ -151,17 +150,17 @@ func UserCreateWithVerification(c *gin.Context) {
 	gVerificationCode := c.DefaultQuery("verification", "")
 
 	if isFieldInvalid(gEmail, emailField) {
-		JsonResponse(c, CodeWrongParam, "Email format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Email format is invalid", nil)
 		return
 	}
 
 	if isFieldInvalid(gPassword, passwordField) {
-		JsonResponse(c, CodeWrongParam, "Password format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Password format is invalid", nil)
 		return
 	}
 
 	if isFieldInvalid(gVerificationCode, verficationCodeField) {
-		JsonResponse(c, CodeWrongParam, "Verification format is invalid", nil)
+		JSONResponse(c, CodeWrongParam, "Verification format is invalid", nil)
 		return
 	}
 
@@ -172,7 +171,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	if userExist {
-		JsonResponse(c, CodeAlreadyExist, "", nil)
+		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
@@ -183,7 +182,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	if !userVerificationExist {
-		JsonResponse(c, CodeOK, "", nil)
+		JSONResponse(c, CodeOK, "", nil)
 		return
 	}
 
@@ -196,14 +195,14 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	// exceed the trying limit
 	if result.RemainingCount <= 0 {
-		_, err = models.GetUserVerificationCollection().DeleteOne(nil,
+		_, err = models.GetUserVerificationCollection().DeleteOne(c,
 			bson.M{"email": gEmail},
 		)
 		if err != nil {
 			panic(err)
 		}
 
-		JsonResponse(c, CodeAuthError, "exceed trying limit", gin.H{
+		JSONResponse(c, CodeAuthError, "exceed trying limit", gin.H{
 			"expired": true,
 		})
 		return
@@ -212,7 +211,7 @@ func UserCreateWithVerification(c *gin.Context) {
 	// incorrect verification code
 	if result.VerificationCode != gVerificationCode {
 		// reduce remaining trying count
-		_, err = models.GetUserVerificationCollection().UpdateOne(nil,
+		_, err = models.GetUserVerificationCollection().UpdateOne(c,
 			bson.M{"email": gEmail},
 			bson.M{"$inc": bson.M{"remainingCount": -1}},
 		)
@@ -220,7 +219,7 @@ func UserCreateWithVerification(c *gin.Context) {
 			panic(err)
 		}
 
-		JsonResponse(c, CodeAuthError, "incorrect verification code", gin.H{
+		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
 			"expired": false,
 		})
 		return
@@ -241,7 +240,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	_, err = models.GetUserCollection().InsertOne(nil, &models.User{
+	_, err = models.GetUserCollection().InsertOne(c, &models.User{
 		ID:          userID,
 		Email:       gEmail,
 		Password:    hash,
@@ -252,7 +251,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		panic(err)
 	}
 
-	JsonResponse(c, CodeOK, "", nil)
+	JSONResponse(c, CodeOK, "", nil)
 }
 
 // generateVerificationCode outputs a random 6-digit code

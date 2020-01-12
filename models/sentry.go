@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,7 +28,7 @@ type Trigger struct {
 
 // Sentry struct is the main one for describing a sentry
 type Sentry struct {
-	Id   primitive.ObjectID `bson:"_id,omitempty"`
+	ID   primitive.ObjectID `bson:"_id,omitempty"`
 	Name string             `bson:"name"`
 	// Mode          SentryMode             `bson:"mode"`
 	User          primitive.ObjectID     `bson:"user"`
@@ -44,7 +45,7 @@ type Sentry struct {
 }
 
 type ImageHistory struct {
-	Id     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
+	ID     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
 	Images []SentryImage      `bson:"images" json:"images"`
 }
 
@@ -61,7 +62,7 @@ func GetUncheckedSentry() (*Sentry, error) {
 	filter := bson.M{"nextCheckTime": bson.M{"$lte": now}}
 	opts := options.FindOneAndUpdate().SetSort(bson.M{"nextCheckTime": 1}).SetReturnDocument(options.Before).SetUpsert(false)
 
-	err := c.FindOneAndUpdate(nil, filter, update, opts).Decode(&result)
+	err := c.FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	}
@@ -69,7 +70,7 @@ func GetUncheckedSentry() (*Sentry, error) {
 }
 
 func GetUserSentries(user primitive.ObjectID) (results []Sentry, err error) {
-	cur, err := mongoDB.Collection("Sentries").Find(nil, bson.M{"user": user})
+	cur, err := mongoDB.Collection("Sentries").Find(context.TODO(), bson.M{"user": user})
 	if err == nil {
 		err = getAllFromCursor(cur, &results)
 	}
@@ -80,20 +81,20 @@ func GetSentry(id primitive.ObjectID) (*Sentry, error) {
 	c := mongoDB.Collection("Sentries")
 
 	var result Sentry
-	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	return &result, err
 }
 
 func AddSentry(s *Sentry) error {
 	// insert doc containing "foreign key" first
-	_, err := mongoDB.Collection("ImageHistories").InsertOne(nil, &ImageHistory{
-		Id:     s.Id,
+	_, err := mongoDB.Collection("ImageHistories").InsertOne(context.TODO(), &ImageHistory{
+		ID:     s.ID,
 		Images: []SentryImage{},
 	})
 	if err != nil {
 		return err
 	}
-	_, err = mongoDB.Collection("Sentries").InsertOne(nil, s)
+	_, err = mongoDB.Collection("Sentries").InsertOne(context.TODO(), s)
 	return err
 }
 
@@ -101,7 +102,7 @@ func GetImageHistory(id primitive.ObjectID) (*ImageHistory, error) {
 	c := mongoDB.Collection("ImageHistories")
 
 	var result ImageHistory
-	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	return &result, err
 }
 
@@ -111,7 +112,7 @@ func GetSentryName(id primitive.ObjectID) (name string, err error) {
 	var result struct {
 		Name string `bson:"name"`
 	}
-	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err = c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	if err != nil {
 		return
 	}
@@ -125,7 +126,7 @@ func GetSentryNotification(id primitive.ObjectID) (nid primitive.ObjectID, err e
 	var result struct {
 		Notification primitive.ObjectID `bson:"notification"`
 	}
-	err = c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err = c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	if err != nil {
 		return
 	}
@@ -141,7 +142,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 		CreateTime time.Time `bson:"createTime"`
 	}
 
-	err := c.FindOne(nil, bson.M{"_id": id}).Decode(&result)
+	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	if err != nil {
 		return err
 	}
@@ -159,7 +160,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 	if changed {
 		// add history
 		c := mongoDB.Collection("ImageHistories")
-		_, err = c.UpdateOne(nil, bson.M{"_id": id}, bson.M{
+		_, err = c.UpdateOne(context.TODO(), bson.M{"_id": id}, bson.M{
 			"$push": bson.M{"images": &SentryImage{Time: now, File: newImage}},
 		})
 
@@ -175,7 +176,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 	}
 
 	c = mongoDB.Collection("Sentries")
-	_, err = c.UpdateOne(nil, bson.M{"_id": id}, up)
+	_, err = c.UpdateOne(context.TODO(), bson.M{"_id": id}, up)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -49,20 +50,20 @@ func CheckUserVerificationExistence(u string) (bool, error) {
 // GetUserByEmail get the user's information
 // It takes an email and a struct to store the result
 func GetUserByEmail(u string, result interface{}) error {
-	return GetUserCollection().FindOne(nil, bson.M{"email": u}).Decode(result)
+	return GetUserCollection().FindOne(context.TODO(), bson.M{"email": u}).Decode(result)
 }
 
 // GetUserVerificationByEmail get the user's verification by email
 // It takes an email and a struct to store the result
 func GetUserVerificationByEmail(u string, result interface{}) error {
-	return GetUserVerificationCollection().FindOne(nil, bson.M{"email": u}).Decode(result)
+	return GetUserVerificationCollection().FindOne(context.TODO(), bson.M{"email": u}).Decode(result)
 }
 
 // GetUserByID get the user's information by his id,
 // it takes a id, and a result structure
 func GetUserByID(id primitive.ObjectID, result interface{}) error {
 	c := GetUserCollection()
-	return c.FindOne(nil, bson.M{"_id": id}).Decode(result)
+	return c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(result)
 }
 
 // GetUserCollection returns the collection of the User
@@ -88,7 +89,7 @@ func CheckPassword(p string, hash string) bool {
 }
 
 func checkExistenceInCollection(c *mongo.Collection, u string) (bool, error) {
-	count, err := c.CountDocuments(nil, bson.M{"email": u})
+	count, err := c.CountDocuments(context.TODO(), bson.M{"email": u})
 
 	if err != nil {
 		return false, errors.New("failed to count")

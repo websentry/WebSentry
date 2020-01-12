@@ -80,8 +80,7 @@ func runDaemon(d *mail.Dialer) {
 func SendVerificationEmail(e, vc string) {
 
 	// subject
-	var s string
-	s = "Verify Your Account on WebSentry"
+	s := "Verify Your Account on WebSentry"
 
 	// apply email templates
 	b := new(bytes.Buffer)

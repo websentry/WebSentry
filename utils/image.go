@@ -23,8 +23,14 @@ func init() {
 	imageBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "orig")
 	imageThumbBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "thumb")
 
-	os.MkdirAll(imageBasePath, os.ModePerm)
-	os.MkdirAll(imageThumbBasePath, os.ModePerm)
+	err := os.MkdirAll(imageBasePath, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	err = os.MkdirAll(imageThumbBasePath, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func RandStringBytes(n int) string {
@@ -41,7 +47,7 @@ func ImageRandomFilename() string {
 	for {
 		filename = RandStringBytes(32)
 
-		fullFilename := path.Join(imageThumbBasePath, filename + ".jpg")
+		fullFilename := path.Join(imageThumbBasePath, filename+".jpg")
 		_, err := os.Stat(fullFilename)
 		if os.IsNotExist(err) {
 			break
@@ -63,9 +69,9 @@ func ImageCheckFilename(filename string) bool {
 // need check filename if the filename comes from user
 func ImageGetFullPath(filename string, thumb bool) string {
 	if thumb {
-		return path.Join(imageThumbBasePath, filename + ".jpg")
+		return path.Join(imageThumbBasePath, filename+".jpg")
 	} else {
-		return path.Join(imageBasePath, filename + ".png")
+		return path.Join(imageBasePath, filename+".png")
 	}
 }
 
@@ -100,15 +106,21 @@ func ImageCompare(a image.Image, b image.Image) (float32, error) {
 			total += 3
 		}
 	}
-	return 1 - float32(v / float64(total)), nil
+	return 1 - float32(v/float64(total)), nil
 }
 
-func ImageSave(image image.Image) string {
+func ImageSave(image image.Image) (string, error) {
 	filename := ImageRandomFilename()
 
-	imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	err := imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	if err != nil {
+		return "", err
+	}
 	// thumb
-	imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
+	err = imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
+	if err != nil {
+		return "", err
+	}
 
-	return filename
+	return filename, nil
 }

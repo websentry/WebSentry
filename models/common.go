@@ -26,7 +26,7 @@ func ApplyMigrations() error {
 	}
 
 	c := mongoDB.Collection("Admin")
-	err := c.FindOne(nil, bson.M{"_id": key}).Decode(&general)
+	err := c.FindOne(context.Background(), bson.M{"_id": key}).Decode(&general)
 	if err != nil && !IsErrNoDocument(err) {
 		return err
 	}
@@ -49,7 +49,7 @@ func ApplyMigrations() error {
 		}
 
 		// update sentry schema
-		_, err = mongoDB.Collection("Sentries").UpdateMany(nil, bson.M{}, bson.M{
+		_, err = mongoDB.Collection("Sentries").UpdateMany(context.Background(), bson.M{}, bson.M{
 			"$set": bson.M{
 				"trigger": bson.M{
 					"similarityThreshold": 0.9999,
@@ -62,7 +62,7 @@ func ApplyMigrations() error {
 		general.DbVersion = 1
 	}
 
-	_, err = c.ReplaceOne(nil, bson.M{"_id": key}, &general, options.Replace().SetUpsert(true))
+	_, err = c.ReplaceOne(context.Background(), bson.M{"_id": key}, &general, options.Replace().SetUpsert(true))
 	return err
 }
 
@@ -82,7 +82,7 @@ func getAllFromCursor(cur *mongo.Cursor, result interface{}) error {
 	slicev = slicev.Slice(0, slicev.Cap())
 	elemt := slicev.Type().Elem()
 	i := 0
-	for cur.Next(nil) {
+	for cur.Next(context.TODO()) {
 		if slicev.Len() == i {
 			elemp := reflect.New(elemt)
 			err := cur.Decode(elemp.Interface())
@@ -102,5 +102,5 @@ func getAllFromCursor(cur *mongo.Cursor, result interface{}) error {
 	}
 	resultv.Elem().Set(slicev.Slice(0, i))
 
-	return cur.Close(nil)
+	return cur.Close(context.TODO())
 }

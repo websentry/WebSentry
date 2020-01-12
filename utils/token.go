@@ -10,12 +10,11 @@ import (
 )
 
 const (
-	secretLength   = 256
 	expireDuration = time.Hour * 24 * 30
 )
 
 type claim struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 	jwt.StandardClaims
 }
 
@@ -75,10 +74,9 @@ func TokenValidate(t string) (string, error) {
 
 	if token.Valid {
 		if c, ok := token.Claims.(*claim); ok {
-			return c.Id, nil
-		} else {
-			return "", ErrorParseClaim
+			return c.ID, nil
 		}
+		return "", ErrorParseClaim
 	} else if ve, ok := err.(*jwt.ValidationError); ok {
 		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 			return "", ErrorTokenMalformed
@@ -89,20 +87,3 @@ func TokenValidate(t string) (string, error) {
 
 	return "", ErrorParseToken
 }
-
-/*
-func generateSecretKey() []byte {
-	const runes = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
-	b := make([]byte, secretLength)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-
-	for i, t := range b {
-		b[i] = runes[int(t)%len(runes)]
-	}
-
-	return b
-}
-*/

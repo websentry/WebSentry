@@ -82,7 +82,6 @@ func setupRouter() *gin.Engine {
 			slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
 		}
 
-
 		// common
 		commonGroup := v1.Group("/common")
 		{

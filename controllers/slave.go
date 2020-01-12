@@ -54,7 +54,7 @@ type taskInfo struct {
 	tmpToken string // tmp token for get request for the actual image
 
 	// sentry
-	sentryId  primitive.ObjectID
+	sentryID  primitive.ObjectID
 	baseImage *models.SentryImage
 	trigger   *models.Trigger
 }
@@ -120,7 +120,7 @@ func addSentryTask(s *models.Sentry) int32 {
 	ti.task = s.Task
 	ti.mode = taskModeSentry
 	ti.status = taskStatusInQueue
-	ti.sentryId = s.Id
+	ti.sentryID = s.ID
 	ti.baseImage = &s.Image
 	ti.trigger = &s.Trigger
 	ti.expire = time.Now().Add(time.Minute * 5)
@@ -191,19 +191,19 @@ func getTask() (int32, *taskInfo) {
 }
 
 func SlaveInit(c *gin.Context) {
-	JsonResponse(c, CodeOK, "", nil)
+	JSONResponse(c, CodeOK, "", nil)
 }
 
 func SlaveFetchTask(c *gin.Context) {
 	tid, ti := getTask()
 
 	if tid >= 0 {
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"taskId": tid,
 			"task":   ti.task,
 		})
 	} else {
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"taskId": -1,
 		})
 	}
@@ -215,13 +215,13 @@ func SlaveSubmitTask(c *gin.Context) {
 
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
 	if err != nil {
-		JsonResponse(c, CodeWrongParam, "", nil)
+		JSONResponse(c, CodeWrongParam, "", nil)
 		return
 	}
 
 	ti, ok := taskq.info[int32(tid)]
 	if !ok {
-		JsonResponse(c, CodeNotExist, "", nil)
+		JSONResponse(c, CodeNotExist, "", nil)
 		return
 	}
 
@@ -234,7 +234,7 @@ func SlaveSubmitTask(c *gin.Context) {
 
 		fileH, err := c.FormFile("image")
 		if err != nil {
-			JsonResponse(c, CodeWrongParam, "Image error", nil)
+			JSONResponse(c, CodeWrongParam, "Image error", nil)
 			return
 		}
 
@@ -259,14 +259,14 @@ func SlaveSubmitTask(c *gin.Context) {
 		}()
 	}
 
-	JsonResponse(c, CodeOK, "", nil)
+	JSONResponse(c, CodeOK, "", nil)
 }
 
 func waitFullScreenshot(c *gin.Context) {
 
 	tid, err := strconv.ParseInt(c.Query("taskId"), 10, 32)
 	if err != nil {
-		JsonResponse(c, CodeWrongParam, "", nil)
+		JSONResponse(c, CodeWrongParam, "", nil)
 		return
 	}
 
@@ -275,7 +275,7 @@ func waitFullScreenshot(c *gin.Context) {
 	ti, ok := taskq.info[int32(tid)]
 	if !ok || ti.mode != taskModeFullScreen || ti.user != c.MustGet("userId") {
 		taskq.infoMux.Unlock()
-		JsonResponse(c, CodeNotExist, "", nil)
+		JSONResponse(c, CodeNotExist, "", nil)
 		return
 	}
 	incomplete := ti.status != taskStatusCompleted
@@ -292,12 +292,12 @@ func waitFullScreenshot(c *gin.Context) {
 	}
 
 	if timeoutFlag {
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"complete": false,
 		})
 	} else {
 		taskq.infoMux.Lock()
-		JsonResponse(c, CodeOK, "", gin.H{
+		JSONResponse(c, CodeOK, "", gin.H{
 			"complete":     true,
 			"imageToken":   ti.tmpToken,
 			"feedbackCode": ti.feedbackCode,
