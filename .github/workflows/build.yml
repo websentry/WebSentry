@@ -19,8 +19,6 @@ jobs:
     steps:
     - name: Install Go
       uses: actions/setup-go@v1
-      env:
-        go111module: on
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
