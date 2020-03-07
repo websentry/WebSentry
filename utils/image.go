@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"image"
 	"image/png"
 	"math"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/disintegration/imaging"
+	"github.com/pkg/errors"
 
 	"github.com/websentry/websentry/config"
 )
@@ -113,11 +113,13 @@ func ImageSave(image image.Image) (string, error) {
 	filename := ImageRandomFilename()
 
 	err := imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	err = errors.WithStack(err)
 	if err != nil {
 		return "", err
 	}
 	// thumb
 	err = imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
+	err = errors.WithStack(err)
 	if err != nil {
 		return "", err
 	}

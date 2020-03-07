@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,7 +29,7 @@ func ApplyMigrations() error {
 	c := mongoDB.Collection("Admin")
 	err := c.FindOne(context.Background(), bson.M{"_id": key}).Decode(&general)
 	if err != nil && !IsErrNoDocument(err) {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if general.DbVersion == 0 {
@@ -45,7 +46,7 @@ func ApplyMigrations() error {
 		}
 		_, err = GetUserVerificationCollection().Indexes().CreateOne(context.Background(), index)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		// update sentry schema
@@ -57,19 +58,19 @@ func ApplyMigrations() error {
 			},
 		})
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		general.DbVersion = 1
 	}
 
 	_, err = c.ReplaceOne(context.Background(), bson.M{"_id": key}, &general, options.Replace().SetUpsert(true))
-	return err
+	return errors.WithStack(err)
 }
 
 // Helper for MongoDB
 
 func IsErrNoDocument(err error) bool {
-	return err == mongo.ErrNoDocuments
+	return errors.Is(err, mongo.ErrNoDocuments)
 }
 
 // modify from mgo "func (iter *Iter) All(result interface{}) error"

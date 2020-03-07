@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/models"
@@ -262,7 +262,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 
 	b, err := imaging.Decode(bytes.NewReader(ti.image))
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// first time
@@ -270,7 +270,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 
 		imageFilename, err := utils.ImageSave(b)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		err = models.UpdateSentryAfterCheck(ti.sentryID, true, imageFilename)
@@ -278,24 +278,29 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		if err != nil {
 			utils.ImageDelete(imageFilename, false)
 		}
-		return err
+		return errors.WithStack(err)
 	}
 
 	a, err := imaging.Open(utils.ImageGetFullPath(ti.baseImage.File, false))
 
 	if err != nil {
 		// TODO: error handling
-		fmt.Println("image error")
-		return err
+		return errors.WithStack(err)
 	}
 
-	similarity, _ := utils.ImageCompare(a, b)
+	similarity, err := utils.ImageCompare(a, b)
+	if err != nil {
+		return err
+	}
 	changed := float64(similarity) < ti.trigger.SimilarityThreshold
 	newImage := ""
 	if changed {
 		// changed
 		// save new image
-		newImage, _ = utils.ImageSave(b)
+		newImage, err = utils.ImageSave(b)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryID.Hex(), similarity*100, changed)
@@ -320,5 +325,5 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		}
 	}
 
-	return err
+	return errors.WithStack(err)
 }
