@@ -58,7 +58,8 @@ func SentryList(c *gin.Context) {
 
 	results, err := models.GetUserSentries(c.MustGet("userId").(primitive.ObjectID))
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	sentries := make([]struct {
@@ -93,17 +94,20 @@ func SentryInfo(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	notification, err := models.GetNotification(s.Notification)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	imageHistory, err := models.GetImageHistory(id)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	sentryJSON := struct {
@@ -209,7 +213,8 @@ func SentryCreate(c *gin.Context) {
 
 	err = models.AddSentry(s)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{

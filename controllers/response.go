@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -45,4 +46,10 @@ func JSONResponse(c *gin.Context, code int, detail string, data interface{}) {
 	}
 
 	c.JSON(http.StatusOK, json)
+}
+
+func InternalErrorResponse(c *gin.Context, err error) {
+	c.Abort()
+	log.Printf("Internal error: \n %+v", err)
+	c.String(http.StatusInternalServerError, "Internal Server Error")
 }

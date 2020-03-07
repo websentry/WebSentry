@@ -108,7 +108,8 @@ func NotificationAddServerChan(c *gin.Context) {
 	id, err := models.NotificationAddServerChan(name, user, sckey)
 
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
