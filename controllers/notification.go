@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/config"
@@ -17,13 +18,16 @@ import (
 
 func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old string, new string, similarity float32) error {
 	nid, err := models.GetSentryNotification(sentryID)
-	name, _ := models.GetSentryName(sentryID)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
+	}
+	name, err := models.GetSentryName(sentryID)
+	if err != nil {
+		return errors.WithStack(err)
 	}
 	n, err := models.GetNotification(nid)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	// TODO: url
 
@@ -43,11 +47,11 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 		b := &bytes.Buffer{}
 		t, err := template.ParseFiles("templates/notifications/serverchan.md")
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		err = t.Execute(b, data)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		msg := b.String()
 
@@ -58,7 +62,7 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 		_, err = http.Get(fmt.Sprintf("https://sc.ftqq.com/%s.send?text=%s&desp=%s",
 			n.Setting["sckey"], title, msg))
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		return nil
@@ -70,11 +74,11 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 
 		t, err := template.ParseFiles("templates/emails/baseEmail.html", "templates/notifications/email.html")
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		if err = t.ExecuteTemplate(b, "base", data); err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		bs := b.String()
@@ -88,7 +92,8 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 func NotificationList(c *gin.Context) {
 	results, err := models.NotificationList(c.MustGet("userId").(primitive.ObjectID))
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 	JSONResponse(c, CodeOK, "", gin.H{
 		"notifications": results,
@@ -103,7 +108,8 @@ func NotificationAddServerChan(c *gin.Context) {
 	id, err := models.NotificationAddServerChan(name, user, sckey)
 
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{

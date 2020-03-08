@@ -37,7 +37,8 @@ func UserInfo(c *gin.Context) {
 	result := models.User{}
 	err := models.GetUserByID(c.MustGet("userId").(primitive.ObjectID), &result)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
@@ -63,7 +64,8 @@ func UserLogin(c *gin.Context) {
 	// check if the user exists
 	userExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 	if !userExist {
 		JSONResponse(c, CodeNotExist, "sign up required", nil)
@@ -74,7 +76,8 @@ func UserLogin(c *gin.Context) {
 	result := models.User{}
 	err = models.GetUserByEmail(gEmail, &result)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if !models.CheckPassword(gPassword, result.Password) {
@@ -100,7 +103,8 @@ func UserGetSignUpVerification(c *gin.Context) {
 	// check existence of the user
 	userAlreadyExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 	if userAlreadyExist {
 		JSONResponse(c, CodeAlreadyExist, "", nil)
@@ -111,7 +115,8 @@ func UserGetSignUpVerification(c *gin.Context) {
 
 	userVerificationExist, err := models.CheckUserVerificationExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if userVerificationExist {
@@ -129,7 +134,8 @@ func UserGetSignUpVerification(c *gin.Context) {
 		})
 
 		if err != nil {
-			panic(err)
+			InternalErrorResponse(c, err)
+			return
 		}
 
 		// we only send a verfication code once
@@ -167,7 +173,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	// check if it is already in the Users table
 	userExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if userExist {
@@ -178,7 +185,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	// check if the user exist in UserVerifications table
 	userVerificationExist, err := models.CheckUserVerificationExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if !userVerificationExist {
@@ -190,7 +198,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	result := models.UserVerification{}
 	err = models.GetUserVerificationByEmail(gEmail, &result)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	// exceed the trying limit
@@ -199,7 +208,8 @@ func UserCreateWithVerification(c *gin.Context) {
 			bson.M{"email": gEmail},
 		)
 		if err != nil {
-			panic(err)
+			InternalErrorResponse(c, err)
+			return
 		}
 
 		JSONResponse(c, CodeAuthError, "exceed trying limit", gin.H{
@@ -216,7 +226,8 @@ func UserCreateWithVerification(c *gin.Context) {
 			bson.M{"$inc": bson.M{"remainingCount": -1}},
 		)
 		if err != nil {
-			panic(err)
+			InternalErrorResponse(c, err)
+			return
 		}
 
 		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
@@ -228,7 +239,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	// insert to User table
 	hash, err := models.HashPassword(gPassword)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	userID := primitive.NewObjectID()
@@ -237,7 +249,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	err = models.NotificationAddEmail(userID, gEmail, "--default--")
 
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	_, err = models.GetUserCollection().InsertOne(c, &models.User{
@@ -248,7 +261,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	})
 
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", nil)

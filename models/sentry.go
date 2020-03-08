@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -63,7 +63,7 @@ func GetUncheckedSentry() (*Sentry, error) {
 	opts := options.FindOneAndUpdate().SetSort(bson.M{"nextCheckTime": 1}).SetReturnDocument(options.Before).SetUpsert(false)
 
 	err := c.FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
-	if err == mongo.ErrNoDocuments {
+	if IsErrNoDocument(err) {
 		return nil, nil
 	}
 	return &result, err
@@ -92,10 +92,10 @@ func AddSentry(s *Sentry) error {
 		Images: []SentryImage{},
 	})
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	_, err = mongoDB.Collection("Sentries").InsertOne(context.TODO(), s)
-	return err
+	return errors.WithStack(err)
 }
 
 func GetImageHistory(id primitive.ObjectID) (*ImageHistory, error) {
@@ -144,7 +144,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 
 	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	now := time.Now()
@@ -165,7 +165,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 		})
 
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 
@@ -178,7 +178,7 @@ func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string
 	c = mongoDB.Collection("Sentries")
 	_, err = c.UpdateOne(context.TODO(), bson.M{"_id": id}, up)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
