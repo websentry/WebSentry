@@ -211,7 +211,7 @@ func SentryCreate(c *gin.Context) {
 		},
 	}
 
-	err = models.AddSentry(s)
+	err = models.CreateSentryAndImageHistory(s)
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
@@ -220,6 +220,51 @@ func SentryCreate(c *gin.Context) {
 	JSONResponse(c, CodeOK, "", gin.H{
 		"sentryId": s.ID.Hex(),
 	})
+}
+
+func SentryRemove(c *gin.Context) {
+	id, err := primitive.ObjectIDFromHex(c.Query("id"))
+	if err != nil {
+		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
+		return
+	}
+
+	s, err := models.GetSentry(id)
+	if models.IsErrNoDocument(err) || s.User != c.MustGet("userId").(primitive.ObjectID) {
+		JSONResponse(c, CodeNotExist, "", nil)
+		return
+	}
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
+	}
+
+	// start deleting
+	err = models.DeleteSentry(id)
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
+	}
+
+	// main db entry has deleted, after this point, all error will only be logged
+	// and won't affect the result
+	reportError := func(err error, reason string) {
+		if err == nil {
+			return
+		}
+		err = errors.WithMessage(err, reason)
+		log.Printf("Error happened when cleanup sentry[%v]: \n %+v", id.String(), err)
+	}
+	imageHistory, err := models.GetImageHistory(id)
+	if err != nil {
+		reportError(err, "Loading imageHistory failed")
+	}
+	err = models.DeleteImageHistory(id)
+	reportError(err, "Delete imageHistory failed")
+	for _, img := range imageHistory.Images {
+		utils.ImageDelete(img.File, false)
+	}
+	JSONResponse(c, CodeOK, "", gin.H{})
 }
 
 func GetHistoryImage(c *gin.Context) {

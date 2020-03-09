@@ -85,7 +85,7 @@ func GetSentry(id primitive.ObjectID) (*Sentry, error) {
 	return &result, err
 }
 
-func AddSentry(s *Sentry) error {
+func CreateSentryAndImageHistory(s *Sentry) error {
 	// insert doc containing "foreign key" first
 	_, err := mongoDB.Collection("ImageHistories").InsertOne(context.TODO(), &ImageHistory{
 		ID:     s.ID,
@@ -95,6 +95,16 @@ func AddSentry(s *Sentry) error {
 		return errors.WithStack(err)
 	}
 	_, err = mongoDB.Collection("Sentries").InsertOne(context.TODO(), s)
+	return errors.WithStack(err)
+}
+
+func DeleteSentry(id primitive.ObjectID) error {
+	_, err := mongoDB.Collection("Sentries").DeleteOne(context.TODO(), bson.M{"_id": id})
+	return errors.WithStack(err)
+}
+
+func DeleteImageHistory(id primitive.ObjectID) error {
+	_, err := mongoDB.Collection("ImageHistories").DeleteOne(context.TODO(), bson.M{"_id": id})
 	return errors.WithStack(err)
 }
 

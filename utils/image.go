@@ -3,6 +3,7 @@ package utils
 import (
 	"image"
 	"image/png"
+	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -75,10 +76,19 @@ func ImageGetFullPath(filename string, thumb bool) string {
 	}
 }
 
+func deleteFileAndIgnoreError(filename string) {
+	err := os.Remove(filename)
+	if err != nil && !os.IsNotExist(err) {
+		err = errors.Wrapf(err, "File: %v", filename)
+		log.Printf("deleteFileAndIgnoreError: \n%+v", err)
+	}
+}
+
+// if failed, only log the error
 func ImageDelete(filename string, keepThumb bool) {
-	os.Remove(ImageGetFullPath(filename, false))
+	deleteFileAndIgnoreError(ImageGetFullPath(filename, false))
 	if !keepThumb {
-		os.Remove(ImageGetFullPath(filename, true))
+		deleteFileAndIgnoreError(ImageGetFullPath(filename, true))
 	}
 }
 
