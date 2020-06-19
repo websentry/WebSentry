@@ -22,3 +22,8 @@ config.json
 
 # GoLand config
 /.idea
+
+# VSCode config
+/.vscode
+
+websentry

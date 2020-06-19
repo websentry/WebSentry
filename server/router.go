@@ -16,7 +16,7 @@ func setupRouter() *gin.Engine {
 
 	// CORS
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = config.GetCROSAllowOrigins()
+	corsConfig.AllowOrigins = config.GetConfig().CROSAllowOrigins
 	corsConfig.AddAllowHeaders("WS-User-Token")
 	corsConfig.AddAllowHeaders("WS-Slave-Key")
 	r.Use(cors.New(corsConfig))

@@ -1,38 +1,38 @@
 package server
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/controllers"
-	"github.com/websentry/websentry/databases"
-	"github.com/websentry/websentry/models"
 )
 
 func Init() {
 
-	db, err := databases.ConnectToMongoDB(config.GetMongodbConfig())
+	db, err := connectToDB(config.GetConfig().Database)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = models.Init(db)
+	// err = models.Init(db)
+	fmt.Print(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	controllers.Init()
 
-	if config.IsReleaseMode() {
+	if config.GetConfig().ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	r := setupRouter()
 
-	r.ForwardedByClientIP = config.IsForwardedByClientIP()
-	err = r.Run(config.GetAddr())
+	r.ForwardedByClientIP = config.GetConfig().ForwardedByClientIP
+	err = r.Run(config.GetConfig().Addr)
 	if err != nil {
 		log.Fatal(err)
 	}

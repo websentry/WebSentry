@@ -1,10 +1,8 @@
 package main
 
-import (
-	"github.com/websentry/websentry/modelsx"
-)
+import "github.com/websentry/websentry/server"
 
 func main() {
-	// server.Init()
-	modelsx.Init()
+	// TODO: reorganize init steps, avoid using golang's [init].
+	server.Init()
 }

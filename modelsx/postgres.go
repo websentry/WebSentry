@@ -12,7 +12,7 @@ import (
 func Init() {
 	fmt.Println(time.Now())
 	fmt.Println("----------")
-	db, err := gorm.Open(postgres.Open("user=postgres password=pwd dbname=postgres port=5432 sslmode=disable"), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open("postgres://postgres:784596@localhost:5432/postgres?sslmode=disable"), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

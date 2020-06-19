@@ -35,8 +35,8 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 		"name":        name,
 		"beforeTime":  lasttime.Format("2006-01-02 15:04"),
 		"currentTime": time.Now().Format("2006-01-02 15:04"),
-		"beforeImage": config.GetBackendURL() + "v1/common/get_history_image?filename=" + old,
-		"afterImage":  config.GetBackendURL() + "v1/common/get_history_image?filename=" + new,
+		"beforeImage": config.GetConfig().BackendURL + "v1/common/get_history_image?filename=" + old,
+		"afterImage":  config.GetConfig().BackendURL + "v1/common/get_history_image?filename=" + new,
 		"similarity":  fmt.Sprintf("%.2f%%", similarity*100),
 	}
 
