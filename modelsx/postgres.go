@@ -17,23 +17,23 @@ func Init() {
 		panic(err)
 	}
 
-	err = migrate(db)
+	err = db.Transaction(migrate)
 
 	if err != nil {
 		panic(err)
 	}
 }
 
-func migrate(db *gorm.DB) (err error) {
-	err = db.AutoMigrate(&SystemSetting{})
+func migrate(tx *gorm.DB) (err error) {
+	err = tx.AutoMigrate(&SystemSetting{})
 	if err != nil {
 		return
 	}
 
 	dbVersion := SystemSetting{Key: "db_version"}
-	err = db.Where(&dbVersion).First(&dbVersion).Error
+	err = tx.Where(&dbVersion).First(&dbVersion).Error
 	if err == gorm.ErrRecordNotFound {
-		db.Create(&dbVersion)
+		tx.Create(&dbVersion)
 		err = nil
 	}
 	if err != nil {
@@ -43,13 +43,13 @@ func migrate(db *gorm.DB) (err error) {
 	dbVersionInt, _ := strconv.Atoi(dbVersion.Value)
 
 	if dbVersionInt == 0 {
-		err = db.AutoMigrate(&User{}, &EmailVerification{}, &NotificationMethod{}, &Sentry{}, &SentryImage{})
+		err = tx.AutoMigrate(&User{}, &EmailVerification{}, &NotificationMethod{}, &Sentry{}, &SentryImage{})
 		if err != nil {
 			return
 		}
 	}
 	dbVersion.Value = "1"
-	return db.Save(&dbVersion).Error
+	return tx.Save(&dbVersion).Error
 }
 
 // We use [string] to store [JSON] in db. Since for now we don't need to query [JSON] in SQL and using [string] allows
