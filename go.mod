@@ -10,9 +10,11 @@ require (
 	github.com/ulule/limiter/v3 v3.3.1
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.3.1
-	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
+	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
+	gorm.io/driver/postgres v0.2.0
+	gorm.io/gorm v0.2.8
 )
 
 go 1.13
