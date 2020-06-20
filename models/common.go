@@ -4,13 +4,17 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/gorm"
 )
 
 var mongoDB *mongo.Database
+var db *gorm.DB
+var snowflakeNode *snowflake.Node
 
 func Init(db *mongo.Database) error {
 	mongoDB = db

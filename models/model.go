@@ -1,56 +1,6 @@
-package modelsx
+package models
 
-import (
-	"fmt"
-	"strconv"
-	"time"
-
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
-
-func Init() {
-	fmt.Println(time.Now())
-	fmt.Println("----------")
-	db, err := gorm.Open(postgres.Open("postgres://postgres:784596@localhost:5432/postgres?sslmode=disable"), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-
-	err = db.Transaction(migrate)
-
-	if err != nil {
-		panic(err)
-	}
-}
-
-func migrate(tx *gorm.DB) (err error) {
-	err = tx.AutoMigrate(&SystemSetting{})
-	if err != nil {
-		return
-	}
-
-	dbVersion := SystemSetting{Key: "db_version"}
-	err = tx.Where(&dbVersion).First(&dbVersion).Error
-	if err == gorm.ErrRecordNotFound {
-		tx.Create(&dbVersion)
-		err = nil
-	}
-	if err != nil {
-		return
-	}
-
-	dbVersionInt, _ := strconv.Atoi(dbVersion.Value)
-
-	if dbVersionInt == 0 {
-		err = tx.AutoMigrate(&User{}, &EmailVerification{}, &NotificationMethod{}, &Sentry{}, &SentryImage{})
-		if err != nil {
-			return
-		}
-	}
-	dbVersion.Value = "1"
-	return tx.Save(&dbVersion).Error
-}
+import "time"
 
 // We use [string] to store [JSON] in db. Since for now we don't need to query [JSON] in SQL and using [string] allows
 // us to support more database.
@@ -100,7 +50,7 @@ type Sentry struct {
 	Interval       int
 	CheckCount     int
 	NotifyCount    int
-	LatestImageID  uint   // foreignkey: SentryImage.ID
+	LatestImageID  *uint  // foreignkey: SentryImage.ID
 	Task           string // json
 	CreatedAt      time.Time
 	UpdatedAt      time.Time

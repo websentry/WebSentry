@@ -23,16 +23,6 @@ type UserVerification struct {
 	CreatedAt        time.Time `bson:"createdAt"`
 }
 
-// User : Entry in the actual User table
-type User struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	Email       string             `bson:"email"`
-	Password    string             `bson:"password"`
-	TimeCreated time.Time          `bson:"createdAt"`
-
-	// TODO: task id?
-}
-
 // CheckUserExistence finds out whether an user is already existed or not
 // It takes a string represents the email
 func CheckUserExistence(u string) (bool, error) {

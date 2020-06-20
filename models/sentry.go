@@ -10,11 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type SentryImage struct {
-	Time time.Time `bson:"time" json:"time"`
-	File string    `bson:"file" json:"file"`
-}
-
 // Trigger struct contains the config of what will trigger a notification
 type Trigger struct {
 	SimilarityThreshold float64 `bson:"similarityThreshold"`
@@ -27,22 +22,6 @@ type Trigger struct {
 // )
 
 // Sentry struct is the main one for describing a sentry
-type Sentry struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty"`
-	Name string             `bson:"name"`
-	// Mode          SentryMode             `bson:"mode"`
-	User          primitive.ObjectID     `bson:"user"`
-	Notification  primitive.ObjectID     `bson:"notification"`
-	Trigger       Trigger                `bson:"trigger"`
-	CreateTime    time.Time              `bson:"createTime"`
-	LastCheckTime time.Time              `bson:"lastCheckTime"`
-	NextCheckTime time.Time              `bson:"nextCheckTime"`
-	Interval      int                    `bson:"interval"`
-	CheckCount    int                    `bson:"checkCount"`
-	NotifyCount   int                    `bson:"notifyCount"`
-	Image         SentryImage            `bson:"image"`
-	Task          map[string]interface{} `bson:"task"`
-}
 
 type ImageHistory struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
