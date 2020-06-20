@@ -22,10 +22,11 @@ type User struct {
 }
 
 type EmailVerification struct {
-	Email            string `gorm:"type:varchar(255);primary_key"`
+	ID               uint   `gorm:"primary_key"`
+	Email            string `gorm:"type:varchar(255);index:email_expiredat"`
 	VerificationCode string `gorm:"type:char(6)"` // verificationCodeLength
 	RemainingCount   int
-	ExpiredAt        time.Time `gorm:"index"`
+	ExpiredAt        time.Time `gorm:"index:email_expiredat"`
 }
 
 type NotificationMethod struct {

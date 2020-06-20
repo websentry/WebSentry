@@ -7,6 +7,7 @@ import (
 )
 
 // TODO: transaction support
+// TODO: check [RowsAffected] ?
 
 var db *gorm.DB
 var snowflakeNode *snowflake.Node

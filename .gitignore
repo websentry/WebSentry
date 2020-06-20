@@ -26,4 +26,6 @@ config.json
 # VSCode config
 /.vscode
 
+/tmp
+
 websentry
