@@ -53,7 +53,6 @@ type Sentry struct {
 	LatestImageID  *uint  // foreignkey: SentryImage.ID
 	Task           string // json
 	CreatedAt      time.Time
-	UpdatedAt      time.Time
 	DeletedAt      *time.Time
 }
 
@@ -62,4 +61,9 @@ type SentryImage struct {
 	SentryID  int64     `gorm:"index:sentryid_createdat"` // foreignkey: Sentry.ID
 	File      string    `gorm:"type:varchar(40)"`
 	CreatedAt time.Time `gorm:"index:sentryid_createdat"`
+}
+
+// Stored as json string
+type Trigger struct {
+	SimilarityThreshold float64 `json:"similarityThreshold"`
 }

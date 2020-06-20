@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -54,9 +55,9 @@ type taskInfo struct {
 	tmpToken string // tmp token for get request for the actual image
 
 	// sentry
-	sentryID  primitive.ObjectID
+	sentryID  int64
 	baseImage *models.SentryImage
-	trigger   *models.Trigger
+	trigger   models.Trigger
 }
 
 type taskQueue struct {
@@ -115,20 +116,31 @@ func insertTaskinfo(ti *taskInfo) int32 {
 	return tid
 }
 
-func addSentryTask(s *models.Sentry) int32 {
+func addSentryTask(s *models.Sentry, i *models.SentryImage) (int32, error) {
+	task := gin.H{}
+	err := json.Unmarshal([]byte(s.Task), &task)
+	if err != nil {
+		return 0, err
+	}
+	trigger := models.Trigger{}
+	err = json.Unmarshal([]byte(s.Trigger), &trigger)
+	if err != nil {
+		return 0, err
+	}
+
 	ti := new(taskInfo)
-	ti.task = s.Task
+	ti.task = task
 	ti.mode = taskModeSentry
 	ti.status = taskStatusInQueue
 	ti.sentryID = s.ID
-	ti.baseImage = &s.Image
-	ti.trigger = &s.Trigger
+	ti.baseImage = i
+	ti.trigger = trigger
 	ti.expire = time.Now().Add(time.Minute * 5)
 
 	tid := insertTaskinfo(ti)
 
 	taskq.nQueue <- tid
-	return tid
+	return tid, nil
 }
 
 func addFullScreenshotTask(task gin.H, user primitive.ObjectID) int32 {

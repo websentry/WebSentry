@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/bwmarrin/snowflake"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -17,4 +18,8 @@ func Init(_db *gorm.DB) (err error) {
 		return
 	}
 	return migrate(db)
+}
+
+func IsErrNoDocument(err error) bool {
+	return errors.Is(err, gorm.ErrRecordNotFound)
 }

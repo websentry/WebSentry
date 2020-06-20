@@ -6,23 +6,27 @@ import (
 	"gorm.io/gorm"
 )
 
-type Trigger struct {
-	SimilarityThreshold float64 `json:"similarityThreshold"`
-}
-
-func GetUncheckedSentry() (*Sentry, error) {
-	var result Sentry
+func GetUncheckedSentry() (*Sentry, *SentryImage, error) {
+	var sResult Sentry
 	now := time.Now()
-	err := db.Where("next_check_time <= ?", now).Order("next_check_time").First(result).Error
+	err := db.Where("next_check_time <= ?", now).Order("next_check_time").First(sResult).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil
+			return nil, nil, nil
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	// delay selected sentry 10 min
-	err = db.Model(&result).Update("next_check_time", now.Add(time.Minute*10)).Error
-	return &result, err
+	err = db.Model(&sResult).Update("next_check_time", now.Add(time.Minute*10)).Error
+	if err != nil {
+		return nil, nil, err
+	}
+	if sResult.LatestImageID == nil {
+		return &sResult, nil, nil
+	}
+	var iResult SentryImage
+	err = db.First(&iResult, *sResult.LatestImageID).Error
+	return &sResult, &iResult, err
 }
 
 func GetUserSentries(userID int64) (results []Sentry, err error) {
@@ -36,9 +40,9 @@ func GetSentry(id int64) (*Sentry, error) {
 	return &result, err
 }
 
-func CreateSentry(s *Sentry) error {
+func CreateSentry(s *Sentry) (int64, error) {
 	s.ID = snowflakeNode.Generate().Int64()
-	return db.Create(s).Error
+	return s.ID, db.Create(s).Error
 }
 
 func DeleteSentry(id int64) error {
@@ -46,7 +50,7 @@ func DeleteSentry(id int64) error {
 }
 
 func GetImageHistory(id int64) (results []SentryImage, err error) {
-	err = db.Where(&SentryImage{SentryID: id}).Find(results).Error
+	err = db.Where(&SentryImage{SentryID: id}).Order("created_at DESC").Find(results).Error
 	return
 }
 

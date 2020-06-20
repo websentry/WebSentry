@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -56,23 +57,30 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 
 func SentryList(c *gin.Context) {
 
-	results, err := models.GetUserSentries(c.MustGet("userId").(primitive.ObjectID))
+	results, err := models.GetUserSentries(c.MustGet("userId").(int64))
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
 	}
 
 	sentries := make([]struct {
-		ID            primitive.ObjectID `json:"id"`
-		Name          string             `json:"name"`
-		URL           string             `json:"url"`
-		LastCheckTime time.Time          `json:"lastCheckTime"`
+		ID            int64      `json:"id,string"`
+		Name          string     `json:"name"`
+		URL           string     `json:"url"`
+		LastCheckTime *time.Time `json:"lastCheckTime"`
 	}, len(results))
 
 	for i := range results {
 		sentries[i].Name = results[i].Name
 		sentries[i].ID = results[i].ID
-		sentries[i].URL = results[i].Task["url"].(string)
+
+		var task map[string]interface{}
+		err = errors.WithStack(json.Unmarshal([]byte(results[i].Task), &task))
+		if err != nil {
+			InternalErrorResponse(c, err)
+			return
+		}
+		sentries[i].URL = task["url"].(string)
 		sentries[i].LastCheckTime = results[i].LastCheckTime
 	}
 
@@ -81,15 +89,33 @@ func SentryList(c *gin.Context) {
 	})
 }
 
+type SentryImageJson struct {
+	File      string    `json:"file"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type SentryJSON struct {
+	ID            int64                      `json:"id,string"`
+	Name          string                     `json:"name"`
+	Notification  *models.NotificationMethod `json:"notification"`
+	LastCheckTime *time.Time                 `json:"lastCheckTime"`
+	Interval      int                        `json:"interval"`
+	CheckCount    int                        `json:"checkCount"`
+	NotifyCount   int                        `json:"notifyCount"`
+	ImageHistory  []SentryImageJson          `json:"imageHistory"`
+	Task          map[string]interface{}     `json:"task"`
+	CreatedAt     time.Time                  `json:"createdAt"`
+}
+
 func SentryInfo(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Query("id"))
+	id, err := strconv.ParseInt(c.Query("id"), 10, 64)
 	if err != nil {
 		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
 		return
 	}
 
 	s, err := models.GetSentry(id)
-	if models.IsErrNoDocument(err) || s.User != c.MustGet("userId").(primitive.ObjectID) {
+	if models.IsErrNoDocument(err) || s.UserID != c.MustGet("userId").(int64) {
 		JSONResponse(c, CodeNotExist, "", nil)
 		return
 	}
@@ -98,7 +124,7 @@ func SentryInfo(c *gin.Context) {
 		return
 	}
 
-	notification, err := models.GetNotification(s.Notification)
+	notification, err := models.GetNotification(s.NotificationID)
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
@@ -110,22 +136,27 @@ func SentryInfo(c *gin.Context) {
 		return
 	}
 
-	sentryJSON := struct {
-		ID            primitive.ObjectID     `json:"id"`
-		Name          string                 `json:"name"`
-		Notification  *models.Notification   `json:"notification"`
-		CreateTime    time.Time              `json:"createTime"`
-		LastCheckTime time.Time              `json:"lastCheckTime"`
-		Interval      int                    `json:"interval"`
-		CheckCount    int                    `json:"checkCount"`
-		NotifyCount   int                    `json:"notifyCount"`
-		Image         *models.SentryImage    `json:"image"`
-		ImageHistory  *models.ImageHistory   `json:"imageHistory"`
-		Task          map[string]interface{} `json:"task"`
-	}{
-		s.ID, s.Name, notification, s.CreateTime, s.LastCheckTime,
-		s.Interval, s.CheckCount, s.NotifyCount, &s.Image,
-		imageHistory, s.Task,
+	imageHistoryJSON := make([]SentryImageJson, len(imageHistory))
+	for i, _ := range imageHistory {
+		imageHistoryJSON[i].CreatedAt = imageHistory[i].CreatedAt
+		imageHistoryJSON[i].File = imageHistory[i].File
+	}
+
+	var task map[string]interface{}
+	err = errors.WithStack(json.Unmarshal([]byte(s.Task), &task))
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
+	}
+
+	sentryJSON := SentryJSON{
+		s.ID, s.Name, notification, s.LastCheckTime,
+		s.Interval, s.CheckCount, s.NotifyCount,
+		imageHistoryJSON, task, s.CreatedAt,
+	}
+
+	if sentryJSON.NotifyCount < 0 {
+		sentryJSON.NotifyCount = 0
 	}
 
 	JSONResponse(c, CodeOK, "", sentryJSON)
@@ -141,14 +172,19 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
-	notification, err := primitive.ObjectIDFromHex(c.Query("notification"))
-
+	notification, err := strconv.ParseInt(c.Query("notification"), 10, 64)
 	if err != nil {
 		JSONResponse(c, CodeWrongParam, "Wrong notificationId", nil)
 		return
 	}
 
-	if !models.NotificationCheckOwner(notification, c.MustGet("userId").(primitive.ObjectID)) {
+	exists, err := models.NotificationCheckOwner(notification, c.MustGet("userId").(int64))
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
+	}
+
+	if !exists {
 		JSONResponse(c, CodeNotExist, "notification does not exist", nil)
 		return
 	}
@@ -181,18 +217,23 @@ func SentryCreate(c *gin.Context) {
 	}
 
 	s := &models.Sentry{}
-	s.ID = primitive.NewObjectID()
 	s.Name = c.Query("name")
-	s.User = c.MustGet("userId").(primitive.ObjectID)
-	s.Notification = notification
-	s.CreateTime = time.Now()
+	s.UserID = c.MustGet("userId").(int64)
+	s.NotificationID = notification
 	s.NextCheckTime = time.Now()
 	s.Interval = 4 * 60 // 4 hours
 	s.CheckCount = 0
 	s.NotifyCount = -1 // will be add 1 at the first check
-	s.Image.File = "placeholder"
-	s.Trigger.SimilarityThreshold = similarityThreshold
-	s.Task = gin.H{
+
+	trigger := models.Trigger{SimilarityThreshold: similarityThreshold}
+	triggerJSON, err := json.Marshal(&trigger)
+	if err != nil {
+		InternalErrorResponse(c, errors.WithStack(err))
+		return
+	}
+	s.Trigger = string(triggerJSON)
+
+	task := gin.H{
 		"url":      u.String(),
 		"timeout":  40000,
 		"fullPage": false,
@@ -211,26 +252,33 @@ func SentryCreate(c *gin.Context) {
 		},
 	}
 
-	err = models.CreateSentryAndImageHistory(s)
+	taskJSON, err := json.Marshal(&task)
+	if err != nil {
+		InternalErrorResponse(c, errors.WithStack(err))
+		return
+	}
+	s.Task = string(taskJSON)
+
+	sid, err := models.CreateSentry(s)
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
-		"sentryId": s.ID.Hex(),
+		"sentryId": string(sid),
 	})
 }
 
 func SentryRemove(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Query("id"))
+	id, err := strconv.ParseInt(c.Query("id"), 10, 64)
 	if err != nil {
 		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
 		return
 	}
 
 	s, err := models.GetSentry(id)
-	if models.IsErrNoDocument(err) || s.User != c.MustGet("userId").(primitive.ObjectID) {
+	if models.IsErrNoDocument(err) || s.UserID != c.MustGet("userId").(int64) {
 		JSONResponse(c, CodeNotExist, "", nil)
 		return
 	}
@@ -246,24 +294,6 @@ func SentryRemove(c *gin.Context) {
 		return
 	}
 
-	// main db entry has deleted, after this point, all error will only be logged
-	// and won't affect the result
-	reportError := func(err error, reason string) {
-		if err == nil {
-			return
-		}
-		err = errors.WithMessage(err, reason)
-		log.Printf("Error happened when cleanup sentry[%v]: \n %+v", id.String(), err)
-	}
-	imageHistory, err := models.GetImageHistory(id)
-	if err != nil {
-		reportError(err, "Loading imageHistory failed")
-	}
-	err = models.DeleteImageHistory(id)
-	reportError(err, "Delete imageHistory failed")
-	for _, img := range imageHistory.Images {
-		utils.ImageDelete(img.File, false)
-	}
 	JSONResponse(c, CodeOK, "", gin.H{})
 }
 
@@ -288,7 +318,7 @@ func sentryTaskScheduler() {
 		time.Sleep(2 * time.Minute)
 
 		for {
-			sentry, err := models.GetUncheckedSentry()
+			sentry, image, err := models.GetUncheckedSentry()
 			if err != nil {
 				// TODO: log
 				break
@@ -297,7 +327,7 @@ func sentryTaskScheduler() {
 				break
 			}
 			// add task
-			addSentryTask(sentry)
+			addSentryTask(sentry, image)
 		}
 	}
 }
@@ -353,7 +383,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		}
 	}
 
-	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryID.Hex(), similarity*100, changed)
+	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryID, similarity*100, changed)
 
 	err = models.UpdateSentryAfterCheck(ti.sentryID, changed, newImage)
 
@@ -362,9 +392,9 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 			// success
 
 			// notification
-			e := toggleNotification(ti.sentryID, ti.baseImage.Time, ti.baseImage.File, newImage, similarity)
+			e := toggleNotification(ti.sentryID, ti.baseImage.CreatedAt, ti.baseImage.File, newImage, similarity)
 			if e != nil {
-				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v \n", ti.sentryID.Hex(), e)
+				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v \n", ti.sentryID, e)
 			}
 
 			// delete old file (keep thumb)
