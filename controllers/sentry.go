@@ -346,7 +346,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 	}
 
 	// first time
-	if ti.baseImage.File == "placeholder" {
+	if ti.baseImage == nil {
 
 		imageFilename, err := utils.ImageSave(b)
 		if err != nil {
