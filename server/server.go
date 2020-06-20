@@ -1,13 +1,13 @@
 package server
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/controllers"
+	"github.com/websentry/websentry/models"
 )
 
 func Init() {
@@ -17,8 +17,7 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	// err = models.Init(db)
-	fmt.Print(db)
+	err = models.Init(db)
 	if err != nil {
 		log.Fatal(err)
 	}
