@@ -13,7 +13,6 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
@@ -44,7 +43,7 @@ func SentryRequestFullScreenshot(c *gin.Context) {
 		},
 	}
 
-	id := addFullScreenshotTask(task, c.MustGet("userId").(primitive.ObjectID))
+	id := addFullScreenshotTask(task, c.MustGet("userId").(int64))
 
 	JSONResponse(c, CodeOK, "", gin.H{
 		"taskId": id,

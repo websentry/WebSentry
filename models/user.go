@@ -18,7 +18,8 @@ const (
 // It takes a string represents the email
 func CheckUserExistence(u string) (bool, error) {
 	var count int64
-	err := db.Where(&User{Email: u}).Count(&count).Error
+	// TODO: not sure why the call to [Model] is required
+	err := db.Model(&User{}).Where(&User{Email: u}).Count(&count).Error
 	return count == 1, err
 }
 
@@ -26,7 +27,7 @@ func CheckUserExistence(u string) (bool, error) {
 // It takes a string represents the email
 func CheckEmailVerificationExistence(u string) (bool, error) {
 	var count int64
-	err := db.Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).Count(&count).Error
+	err := db.Model(&EmailVerification{}).Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).Count(&count).Error
 	return count == 1, err
 }
 

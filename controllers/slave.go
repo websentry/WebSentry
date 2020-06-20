@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
@@ -50,7 +49,7 @@ type taskInfo struct {
 	expire       time.Time
 
 	// screenshot
-	user     primitive.ObjectID
+	user     int64
 	channel  chan bool
 	tmpToken string // tmp token for get request for the actual image
 
@@ -143,7 +142,7 @@ func addSentryTask(s *models.Sentry, i *models.SentryImage) (int32, error) {
 	return tid, nil
 }
 
-func addFullScreenshotTask(task gin.H, user primitive.ObjectID) int32 {
+func addFullScreenshotTask(task gin.H, user int64) int32 {
 	ti := new(taskInfo)
 	ti.task = task
 	ti.mode = taskModeFullScreen
