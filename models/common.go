@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: transaction support
+
 var mongoDB *mongo.Database
 var db *gorm.DB
 var snowflakeNode *snowflake.Node

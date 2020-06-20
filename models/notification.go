@@ -53,6 +53,6 @@ func NotificationCheckOwner(id int64, userID int64) (bool, error) {
 }
 
 func NotificationList(userID int64) (results []NotificationMethod, err error) {
-	err = db.Where(&NotificationMethod{UserID: userID}).Find(&results).Error
+	err = db.Where(&NotificationMethod{UserID: userID}).Find(results).Error
 	return
 }
