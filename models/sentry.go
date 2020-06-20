@@ -9,7 +9,7 @@ import (
 func GetUncheckedSentry() (*Sentry, *SentryImage, error) {
 	var sResult Sentry
 	now := time.Now()
-	err := db.Where("next_check_time <= ?", now).Order("next_check_time").First(sResult).Error
+	err := db.Where("next_check_time <= ?", now).Order("next_check_time").First(&sResult).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil, nil
@@ -30,7 +30,7 @@ func GetUncheckedSentry() (*Sentry, *SentryImage, error) {
 }
 
 func GetUserSentries(userID int64) (results []Sentry, err error) {
-	err = db.Where(&Sentry{UserID: userID}).Find(results).Error
+	err = db.Where(&Sentry{UserID: userID}).Find(&results).Error
 	return
 }
 
@@ -50,7 +50,7 @@ func DeleteSentry(id int64) error {
 }
 
 func GetImageHistory(id int64) (results []SentryImage, err error) {
-	err = db.Where(&SentryImage{SentryID: id}).Order("created_at DESC").Find(results).Error
+	err = db.Where(&SentryImage{SentryID: id}).Order("created_at DESC").Find(&results).Error
 	return
 }
 

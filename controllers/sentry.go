@@ -54,6 +54,13 @@ func SentryWaitFullScreenshot(c *gin.Context) {
 	waitFullScreenshot(c)
 }
 
+type SentryListItemJSON struct {
+	ID            string     `json:"id"`
+	Name          string     `json:"name"`
+	URL           string     `json:"url"`
+	LastCheckTime *time.Time `json:"lastCheckTime"`
+}
+
 func SentryList(c *gin.Context) {
 
 	results, err := models.GetUserSentries(c.MustGet("userId").(int64))
@@ -62,16 +69,11 @@ func SentryList(c *gin.Context) {
 		return
 	}
 
-	sentries := make([]struct {
-		ID            int64      `json:"id,string"`
-		Name          string     `json:"name"`
-		URL           string     `json:"url"`
-		LastCheckTime *time.Time `json:"lastCheckTime"`
-	}, len(results))
+	sentries := make([]SentryListItemJSON, len(results))
 
 	for i := range results {
 		sentries[i].Name = results[i].Name
-		sentries[i].ID = results[i].ID
+		sentries[i].ID = strconv.FormatInt(results[i].ID, 16)
 
 		var task map[string]interface{}
 		err = errors.WithStack(json.Unmarshal([]byte(results[i].Task), &task))
@@ -94,7 +96,7 @@ type SentryImageJson struct {
 }
 
 type SentryJSON struct {
-	ID            int64                      `json:"id,string"`
+	ID            string                     `json:"id"`
 	Name          string                     `json:"name"`
 	Notification  *models.NotificationMethod `json:"notification"`
 	LastCheckTime *time.Time                 `json:"lastCheckTime"`
@@ -107,7 +109,7 @@ type SentryJSON struct {
 }
 
 func SentryInfo(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Query("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Query("id"), 16, 64)
 	if err != nil {
 		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
 		return
@@ -149,7 +151,7 @@ func SentryInfo(c *gin.Context) {
 	}
 
 	sentryJSON := SentryJSON{
-		s.ID, s.Name, notification, s.LastCheckTime,
+		strconv.FormatInt(s.ID, 16), s.Name, notification, s.LastCheckTime,
 		s.Interval, s.CheckCount, s.NotifyCount,
 		imageHistoryJSON, task, s.CreatedAt,
 	}
@@ -171,7 +173,7 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
-	notification, err := strconv.ParseInt(c.Query("notification"), 10, 64)
+	notification, err := strconv.ParseInt(c.Query("notification"), 16, 64)
 	if err != nil {
 		JSONResponse(c, CodeWrongParam, "Wrong notificationId", nil)
 		return
@@ -265,12 +267,12 @@ func SentryCreate(c *gin.Context) {
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
-		"sentryId": string(sid),
+		"sentryId": strconv.FormatInt(sid, 16),
 	})
 }
 
 func SentryRemove(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Query("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Query("id"), 16, 64)
 	if err != nil {
 		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
 		return

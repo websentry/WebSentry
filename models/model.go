@@ -36,7 +36,6 @@ type NotificationMethod struct {
 	Type      string `gorm:"type:varchar(16)"`
 	Setting   string // json
 	CreatedAt time.Time
-	UpdatedAt time.Time
 	DeletedAt *time.Time
 }
 

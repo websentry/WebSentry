@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,7 @@ func keyGetterIP(c *gin.Context) string {
 }
 
 func keyGetterUserID(c *gin.Context) string {
-	return string(c.MustGet("userId").(int64))
+	return strconv.FormatInt(c.MustGet("userId").(int64), 16)
 }
 
 // TODO: use redis

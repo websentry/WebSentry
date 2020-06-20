@@ -34,7 +34,7 @@ func UserAuthRequired(c *gin.Context) {
 	} else {
 		if u != "" {
 			// success
-			userID, err := strconv.ParseInt(u, 10, 64)
+			userID, err := strconv.ParseInt(u, 16, 64)
 			if err != nil {
 				controllers.JSONResponse(c, controllers.CodeAuthError, "Uid is invalid", nil)
 				fmt.Print(err)

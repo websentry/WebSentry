@@ -48,11 +48,11 @@ func NotificationAddServerChan(name string, userID int64, sckey string) (id int6
 
 func NotificationCheckOwner(id int64, userID int64) (bool, error) {
 	var count int64
-	err := db.Where(&NotificationMethod{ID: id, UserID: userID}).Count(&count).Error
+	err := db.Model(&NotificationMethod{}).Where(&NotificationMethod{ID: id, UserID: userID}).Count(&count).Error
 	return count == 1, err
 }
 
 func NotificationList(userID int64) (results []NotificationMethod, err error) {
-	err = db.Where(&NotificationMethod{UserID: userID}).Find(results).Error
+	err = db.Where(&NotificationMethod{UserID: userID}).Find(&results).Error
 	return
 }

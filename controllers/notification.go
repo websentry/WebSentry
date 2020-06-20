@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -95,14 +96,41 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 	return nil
 }
 
+type NotificationListItemJSON struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	Detail    string    `json:"detail"`
+	CreatedAt time.Time `json:"createAt"`
+}
+
 func NotificationList(c *gin.Context) {
 	results, err := models.NotificationList(c.MustGet("userId").(int64))
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
 	}
+	notifications := make([]NotificationListItemJSON, len(results))
+	for i := range results {
+		notifications[i].ID = strconv.FormatInt(results[i].ID, 16)
+		notifications[i].Name = results[i].Name
+		notifications[i].Type = results[i].Type
+		notifications[i].CreatedAt = results[i].CreatedAt
+		setting := gin.H{}
+		err := json.Unmarshal([]byte(results[i].Setting), &setting)
+		if err != nil {
+			InternalErrorResponse(c, err)
+			return
+		}
+		switch results[i].Type {
+		case "serverchan":
+			notifications[i].Detail = setting["sckey"].(string)
+		case "email":
+			notifications[i].Detail = setting["email"].(string)
+		}
+	}
 	JSONResponse(c, CodeOK, "", gin.H{
-		"notifications": results,
+		"notifications": notifications,
 	})
 }
 

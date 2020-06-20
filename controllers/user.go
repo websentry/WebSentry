@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -77,7 +78,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
-		"token": utils.TokenGenerate(string(result.ID)),
+		"token": utils.TokenGenerate(strconv.FormatInt(result.ID, 16)),
 	})
 }
 
