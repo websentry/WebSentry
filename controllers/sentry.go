@@ -138,7 +138,7 @@ func SentryInfo(c *gin.Context) {
 	}
 
 	imageHistoryJSON := make([]SentryImageJson, len(imageHistory))
-	for i, _ := range imageHistory {
+	for i := range imageHistory {
 		imageHistoryJSON[i].CreatedAt = imageHistory[i].CreatedAt
 		imageHistoryJSON[i].File = imageHistory[i].File
 	}
@@ -328,7 +328,8 @@ func sentryTaskScheduler() {
 				break
 			}
 			// add task
-			addSentryTask(sentry, image)
+			// TODO: log
+			_, _ = addSentryTask(sentry, image)
 		}
 	}
 }
@@ -384,7 +385,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		}
 	}
 
-	log.Printf("[compareSentryTaskImage] Info: sentry: %s, similarity: %.2f%%, changed: %v \n", ti.sentryID, similarity*100, changed)
+	log.Printf("[compareSentryTaskImage] Info: sentry: %x, similarity: %.2f%%, changed: %v \n", ti.sentryID, similarity*100, changed)
 
 	err = models.UpdateSentryAfterCheck(ti.sentryID, changed, newImage)
 
@@ -395,7 +396,7 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 			// notification
 			e := toggleNotification(ti.sentryID, ti.baseImage.CreatedAt, ti.baseImage.File, newImage, similarity)
 			if e != nil {
-				log.Printf("[toggleNotification] Error occurred in sentry: %s, err: %v \n", ti.sentryID, e)
+				log.Printf("[toggleNotification] Error occurred in sentry: %x, err: %v \n", ti.sentryID, e)
 			}
 
 			// delete old file (keep thumb)
