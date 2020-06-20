@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -9,14 +10,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
 )
 
-func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old string, new string, similarity float32) error {
+func toggleNotification(sentryID int64, lasttime time.Time, old string, new string, similarity float32) error {
 	nid, err := models.GetSentryNotification(sentryID)
 	if err != nil {
 		return errors.WithStack(err)
@@ -29,6 +29,12 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	var nSetting map[string]interface{}
+	err = json.Unmarshal([]byte(n.Setting), &nSetting)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	// TODO: url
 
 	data := map[string]string{
@@ -60,7 +66,7 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 
 		//TODO: check response
 		_, err = http.Get(fmt.Sprintf("https://sc.ftqq.com/%s.send?text=%s&desp=%s",
-			n.Setting["sckey"], title, msg))
+			nSetting["sckey"], title, msg))
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -82,7 +88,7 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 		}
 
 		bs := b.String()
-		utils.SendEmail(n.Setting["email"].(string), title, &bs)
+		utils.SendEmail(nSetting["email"].(string), title, &bs)
 
 	}
 
@@ -90,7 +96,7 @@ func toggleNotification(sentryID primitive.ObjectID, lasttime time.Time, old str
 }
 
 func NotificationList(c *gin.Context) {
-	results, err := models.NotificationList(c.MustGet("userId").(primitive.ObjectID))
+	results, err := models.NotificationList(c.MustGet("userId").(int64))
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
@@ -102,7 +108,7 @@ func NotificationList(c *gin.Context) {
 
 func NotificationAddServerChan(c *gin.Context) {
 	name := c.Query("name")
-	user := c.MustGet("userId").(primitive.ObjectID)
+	user := c.MustGet("userId").(int64)
 	sckey := c.Query("sckey")
 
 	id, err := models.NotificationAddServerChan(name, user, sckey)
