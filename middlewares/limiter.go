@@ -1,13 +1,13 @@
 package middlewares
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	limitergin "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/controllers"
 )
@@ -21,7 +21,7 @@ func keyGetterIP(c *gin.Context) string {
 }
 
 func keyGetterUserID(c *gin.Context) string {
-	return c.MustGet("userId").(primitive.ObjectID).Hex()
+	return strconv.FormatInt(c.MustGet("userId").(int64), 16)
 }
 
 // TODO: use redis

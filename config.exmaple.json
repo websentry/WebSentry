@@ -1,9 +1,9 @@
 {
   "releaseMode": false,
   "addr": "127.0.0.1:8080",
-  "mongodb": {
-    "url": "mongodb://localhost",
-    "database": "websentry"
+  "database": {
+    "dataSourceName": "postgres://postgres:pwd@localhost:5432/postgres?sslmode=disable",
+    "type": "postgres"
   },
   "verificationEmail": {
     "server": "your_smtp_server",

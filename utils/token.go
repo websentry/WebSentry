@@ -27,7 +27,7 @@ var ErrorTokenRequired error
 
 func init() {
 	if secreteKey == nil {
-		secreteKey = []byte(config.GetTokenSecretKey())
+		secreteKey = []byte(config.GetConfig().TokenSecretKey)
 	}
 
 	// initialize errors

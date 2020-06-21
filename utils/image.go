@@ -21,8 +21,8 @@ const imageFilenameChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1
 var imageBasePath, imageThumbBasePath string
 
 func init() {
-	imageBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "orig")
-	imageThumbBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "thumb")
+	imageBasePath = path.Join(config.GetConfig().FileStoragePath, "sentry", "image", "orig")
+	imageThumbBasePath = path.Join(config.GetConfig().FileStoragePath, "sentry", "image", "thumb")
 
 	err := os.MkdirAll(imageBasePath, os.ModePerm)
 	if err != nil {
