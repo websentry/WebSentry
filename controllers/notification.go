@@ -18,18 +18,26 @@ import (
 )
 
 func toggleNotification(sentryID int64, lasttime time.Time, old string, new string, similarity float32) error {
-	nid, err := models.GetSentryNotification(sentryID)
-	if err != nil {
+	var nid int64
+	var name string
+	var n *models.NotificationMethod
+	err := models.Transaction(func(tx models.TX) error {
+		var err error
+		nid, err = tx.GetSentryNotification(sentryID)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		name, err = tx.GetSentryName(sentryID)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		n, err = tx.GetNotification(nid)
 		return errors.WithStack(err)
-	}
-	name, err := models.GetSentryName(sentryID)
+	})
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
-	n, err := models.GetNotification(nid)
-	if err != nil {
-		return errors.WithStack(err)
-	}
+
 	var nSetting map[string]interface{}
 	err = json.Unmarshal([]byte(n.Setting), &nSetting)
 	if err != nil {
@@ -105,9 +113,13 @@ type NotificationListItemJSON struct {
 }
 
 func NotificationList(c *gin.Context) {
-	results, err := models.NotificationList(c.MustGet("userId").(int64))
+	var results []models.NotificationMethod
+	err := models.Transaction(func(tx models.TX) (err error) {
+		results, err = tx.NotificationList(c.MustGet("userId").(int64))
+		return
+	})
 	if err != nil {
-		InternalErrorResponse(c, err)
+		InternalErrorResponse(c, errors.WithStack(err))
 		return
 	}
 	notifications := make([]NotificationListItemJSON, len(results))
@@ -139,10 +151,14 @@ func NotificationAddServerChan(c *gin.Context) {
 	user := c.MustGet("userId").(int64)
 	sckey := c.Query("sckey")
 
-	id, err := models.NotificationAddServerChan(name, user, sckey)
+	var id int64
+	err := models.Transaction(func(tx models.TX) (err error) {
+		id, err = tx.NotificationAddServerChan(name, user, sckey)
+		return
+	})
 
 	if err != nil {
-		InternalErrorResponse(c, err)
+		InternalErrorResponse(c, errors.WithStack(err))
 		return
 	}
 

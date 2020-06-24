@@ -54,15 +54,15 @@ func GetImageHistory(id int64) (results []SentryImage, err error) {
 	return
 }
 
-func GetSentryName(id int64) (string, error) {
+func (t TX) GetSentryName(id int64) (string, error) {
 	var result Sentry
-	err := db.Select("name").First(&result, id).Error
+	err := t.tx.Select("name").First(&result, id).Error
 	return result.Name, err
 }
 
-func GetSentryNotification(id int64) (int64, error) {
+func (t TX) GetSentryNotification(id int64) (int64, error) {
 	var result Sentry
-	err := db.Select("notification_id").First(&result, id).Error
+	err := t.tx.Select("notification_id").First(&result, id).Error
 	return result.NotificationID, err
 }
 
