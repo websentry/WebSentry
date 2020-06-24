@@ -6,11 +6,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: transaction support
 // TODO: check [RowsAffected] ?
 
 var db *gorm.DB
 var snowflakeNode *snowflake.Node
+
+type TX struct {
+	tx *gorm.DB
+}
 
 func Init(_db *gorm.DB) (err error) {
 	db = _db
@@ -23,4 +26,10 @@ func Init(_db *gorm.DB) (err error) {
 
 func IsErrNoDocument(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
+}
+
+func Transaction(fun func(tx TX) error) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		return fun(TX{tx: tx})
+	})
 }

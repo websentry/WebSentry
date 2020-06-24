@@ -6,9 +6,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: remove this
 func GetNotification(id int64) (*NotificationMethod, error) {
 	var result NotificationMethod
 	err := db.First(&result, id).Error
+	if err != nil {
+		return nil, err
+	} else {
+		return &result, err
+	}
+}
+
+func (t TX) GetNotification(id int64) (*NotificationMethod, error) {
+	var result NotificationMethod
+	err := t.tx.First(&result, id).Error
 	if err != nil {
 		return nil, err
 	} else {
@@ -30,7 +41,7 @@ func NotificationAddEmail(userID int64, email string, name string) (err error) {
 	return db.Create(n).Error
 }
 
-func NotificationAddServerChan(name string, userID int64, sckey string) (id int64, err error) {
+func (tx TX) NotificationAddServerChan(name string, userID int64, sckey string) (id int64, err error) {
 	data, err := json.Marshal(gin.H{"sckey": sckey})
 	if err != nil {
 		return
@@ -52,7 +63,7 @@ func NotificationCheckOwner(id int64, userID int64) (bool, error) {
 	return count == 1, err
 }
 
-func NotificationList(userID int64) (results []NotificationMethod, err error) {
-	err = db.Where(&NotificationMethod{UserID: userID}).Find(&results).Error
+func (t TX) NotificationList(userID int64) (results []NotificationMethod, err error) {
+	err = t.tx.Where(&NotificationMethod{UserID: userID}).Find(&results).Error
 	return
 }
