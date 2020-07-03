@@ -6,18 +6,19 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetUncheckedSentry() (*Sentry, *SentryImage, error) {
+// If there isn't an unchecked sentry, it returns (nil, nil, nil)
+func (t TX) GetUncheckedSentry() (*Sentry, *SentryImage, error) {
 	var sResult Sentry
 	now := time.Now()
-	err := db.Where("next_check_time <= ?", now).Order("next_check_time").First(&sResult).Error
+	err := t.tx.Where("next_check_time <= ?", now).Order("next_check_time").First(&sResult).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if IsErrNoDocument(err) {
 			return nil, nil, nil
 		}
 		return nil, nil, err
 	}
 	// delay selected sentry 10 min
-	err = db.Model(&sResult).Update("next_check_time", now.Add(time.Minute*10)).Error
+	err = t.tx.Model(&sResult).Update("next_check_time", now.Add(time.Minute*10)).Error
 	if err != nil {
 		return nil, nil, err
 	}
@@ -25,32 +26,37 @@ func GetUncheckedSentry() (*Sentry, *SentryImage, error) {
 		return &sResult, nil, nil
 	}
 	var iResult SentryImage
-	err = db.First(&iResult, *sResult.LatestImageID).Error
+	err = t.tx.First(&iResult, *sResult.LatestImageID).Error
 	return &sResult, &iResult, err
 }
 
-func GetUserSentries(userID int64) (results []Sentry, err error) {
-	err = db.Where(&Sentry{UserID: userID}).Find(&results).Error
+func (t TX) GetUserSentries(userID int64) (results []Sentry, err error) {
+	err = t.tx.Where(&Sentry{UserID: userID}).Find(&results).Error
 	return
 }
 
-func GetSentry(id int64) (*Sentry, error) {
+func (t TX) GetSentry(id int64) (*Sentry, error) {
 	var result Sentry
-	err := db.First(&result, id).Error
+	err := t.tx.First(&result, id).Error
 	return &result, err
 }
 
-func CreateSentry(s *Sentry) (int64, error) {
+func (t TX) CreateSentry(s *Sentry) (int64, error) {
 	s.ID = snowflakeNode.Generate().Int64()
-	return s.ID, db.Create(s).Error
+	return s.ID, t.tx.Create(s).Error
 }
 
-func DeleteSentry(id int64) error {
-	return db.Delete(&Sentry{ID: id}).Error
+func (t TX) DeleteSentry(id int64, uid int64) error {
+	res := t.tx.Delete(&Sentry{ID: id, UserID: uid})
+	err := res.Error
+	if err == nil && res.RowsAffected == 0 {
+		err = gorm.ErrRecordNotFound
+	}
+	return err
 }
 
-func GetImageHistory(id int64) (results []SentryImage, err error) {
-	err = db.Where(&SentryImage{SentryID: id}).Order("created_at DESC").Find(&results).Error
+func (t TX) GetImageHistory(id int64) (results []SentryImage, err error) {
+	err = t.tx.Where(&SentryImage{SentryID: id}).Order("created_at DESC").Find(&results).Error
 	return
 }
 
@@ -66,10 +72,10 @@ func (t TX) GetSentryNotification(id int64) (int64, error) {
 	return result.NotificationID, err
 }
 
-func UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
+func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 
 	var result Sentry
-	err := db.Select("interval, create_at, notify_count, check_count").First(&result, id).Error
+	err := t.tx.Select("interval, create_at, notify_count, check_count").First(&result, id).Error
 	if err != nil {
 		return err
 	}
@@ -77,9 +83,9 @@ func UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 	var sentry Sentry
 
 	now := time.Now()
-	t := (int(now.Sub(result.CreatedAt).Minutes()) / result.Interval) + 1
+	tc := (int(now.Sub(result.CreatedAt).Minutes()) / result.Interval) + 1
 	sentry.LastCheckTime = &now
-	sentry.NextCheckTime = result.CreatedAt.Add(time.Minute * time.Duration(t*result.Interval))
+	sentry.NextCheckTime = result.CreatedAt.Add(time.Minute * time.Duration(tc*result.Interval))
 	sentry.CheckCount = result.CheckCount + 1
 
 	if changed {
@@ -88,7 +94,7 @@ func UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 			SentryID: id,
 			File:     newImage,
 		}
-		err = db.Create(&sentryImage).Error
+		err = t.tx.Create(&sentryImage).Error
 		if err != nil {
 			return err
 		}
@@ -96,5 +102,5 @@ func UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 		sentry.NotifyCount = result.NotifyCount + 1
 	}
 
-	return db.Model(&Sentry{ID: id}).Updates(&sentry).Error
+	return t.tx.Model(&Sentry{ID: id}).Updates(&sentry).Error
 }

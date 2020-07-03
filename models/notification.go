@@ -6,17 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TODO: remove this
-func GetNotification(id int64) (*NotificationMethod, error) {
-	var result NotificationMethod
-	err := db.First(&result, id).Error
-	if err != nil {
-		return nil, err
-	} else {
-		return &result, err
-	}
-}
-
 func (t TX) GetNotification(id int64) (*NotificationMethod, error) {
 	var result NotificationMethod
 	err := t.tx.First(&result, id).Error

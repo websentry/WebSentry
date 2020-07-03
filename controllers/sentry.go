@@ -62,15 +62,18 @@ type SentryListItemJSON struct {
 }
 
 func SentryList(c *gin.Context) {
+	var results []models.Sentry
 
-	results, err := models.GetUserSentries(c.MustGet("userId").(int64))
+	err := models.Transaction(func(tx models.TX) (err error) {
+		results, err = tx.GetUserSentries(c.MustGet("userId").(int64))
+		return
+	})
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
 	}
 
 	sentries := make([]SentryListItemJSON, len(results))
-
 	for i := range results {
 		sentries[i].Name = results[i].Name
 		sentries[i].ID = strconv.FormatInt(results[i].ID, 16)
@@ -115,25 +118,36 @@ func SentryInfo(c *gin.Context) {
 		return
 	}
 
-	s, err := models.GetSentry(id)
-	if models.IsErrNoDocument(err) || s.UserID != c.MustGet("userId").(int64) {
+	var exists bool
+	var s *models.Sentry
+	var notification *models.NotificationMethod
+	var imageHistory []models.SentryImage
+
+	err = models.Transaction(func(tx models.TX) (err error) {
+		s, err = tx.GetSentry(id)
+		if err != nil {
+			if models.IsErrNoDocument(err) {
+				exists = false
+				return nil
+			} else {
+				return err
+			}
+		}
+		exists = s.UserID == c.MustGet("userId").(int64)
+
+		notification, err = tx.GetNotification(s.NotificationID)
+		if err != nil {
+			return
+		}
+		imageHistory, err = tx.GetImageHistory(id)
+		return
+	})
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
+	}
+	if !exists {
 		JSONResponse(c, CodeNotExist, "", nil)
-		return
-	}
-	if err != nil {
-		InternalErrorResponse(c, err)
-		return
-	}
-
-	notification, err := models.GetNotification(s.NotificationID)
-	if err != nil {
-		InternalErrorResponse(c, err)
-		return
-	}
-
-	imageHistory, err := models.GetImageHistory(id)
-	if err != nil {
-		InternalErrorResponse(c, err)
 		return
 	}
 
@@ -260,7 +274,11 @@ func SentryCreate(c *gin.Context) {
 	}
 	s.Task = string(taskJSON)
 
-	sid, err := models.CreateSentry(s)
+	var sid int64
+	err = models.Transaction(func(tx models.TX) (err error) {
+		sid, err = tx.CreateSentry(s)
+		return
+	})
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
@@ -278,20 +296,16 @@ func SentryRemove(c *gin.Context) {
 		return
 	}
 
-	s, err := models.GetSentry(id)
-	if models.IsErrNoDocument(err) || s.UserID != c.MustGet("userId").(int64) {
-		JSONResponse(c, CodeNotExist, "", nil)
-		return
-	}
-	if err != nil {
-		InternalErrorResponse(c, err)
-		return
-	}
+	err = models.Transaction(func(tx models.TX) (err error) {
+		return tx.DeleteSentry(id, c.MustGet("userId").(int64))
+	})
 
-	// start deleting
-	err = models.DeleteSentry(id)
 	if err != nil {
-		InternalErrorResponse(c, err)
+		if models.IsErrNoDocument(err) {
+			JSONResponse(c, CodeNotExist, "", nil)
+		} else {
+			InternalErrorResponse(c, err)
+		}
 		return
 	}
 
@@ -319,7 +333,12 @@ func sentryTaskScheduler() {
 		time.Sleep(2 * time.Minute)
 
 		for {
-			sentry, image, err := models.GetUncheckedSentry()
+			var sentry *models.Sentry
+			var image *models.SentryImage
+			err := models.Transaction(func(tx models.TX) (err error) {
+				sentry, image, err = tx.GetUncheckedSentry()
+				return
+			})
 			if err != nil {
 				// TODO: log
 				break
@@ -355,7 +374,9 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 			return errors.WithStack(err)
 		}
 
-		err = models.UpdateSentryAfterCheck(ti.sentryID, true, imageFilename)
+		err = models.Transaction(func(tx models.TX) (err error) {
+			return tx.UpdateSentryAfterCheck(ti.sentryID, true, imageFilename)
+		})
 
 		if err != nil {
 			utils.ImageDelete(imageFilename, false)
@@ -387,7 +408,9 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 
 	log.Printf("[compareSentryTaskImage] Info: sentry: %x, similarity: %.2f%%, changed: %v \n", ti.sentryID, similarity*100, changed)
 
-	err = models.UpdateSentryAfterCheck(ti.sentryID, changed, newImage)
+	err = models.Transaction(func(tx models.TX) (err error) {
+		return tx.UpdateSentryAfterCheck(ti.sentryID, changed, newImage)
+	})
 
 	if changed {
 		if err == nil {
