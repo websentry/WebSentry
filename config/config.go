@@ -9,7 +9,7 @@ import (
 type Config struct {
 	ReleaseMode         bool              `json:"releaseMode"`
 	Addr                string            `json:"addr"`
-	Mongodb             Mongodb           `json:"mongodb"`
+	Database            Database          `json:"database"`
 	VerificationEmail   VerificationEmail `json:"verificationEmail"`
 	FileStoragePath     string            `json:"fileStoragePath"`
 	SlaveKey            string            `json:"slaveKey"`
@@ -19,9 +19,9 @@ type Config struct {
 	ForwardedByClientIP bool              `json:"forwardedByClientIP"`
 }
 
-type Mongodb struct {
-	URL      string `json:"url"`
-	Database string `json:"database"`
+type Database struct {
+	DataSourceName string `json:"dataSourceName"`
+	Type           string `json:"type"`
 }
 
 type VerificationEmail struct {
@@ -51,42 +51,6 @@ func init() {
 	}
 }
 
-func GetAddr() string {
-	return config.Addr
-}
-
-func GetMongodbConfig() Mongodb {
-	return config.Mongodb
-}
-
-func GetVerificationEmailConfig() VerificationEmail {
-	return config.VerificationEmail
-}
-
-func GetFileStoragePath() string {
-	return config.FileStoragePath
-}
-
-func GetSlaveKey() string {
-	return config.SlaveKey
-}
-
-func GetTokenSecretKey() string {
-	return config.TokenSecretKey
-}
-
-func GetBackendURL() string {
-	return config.BackendURL
-}
-
-func GetCROSAllowOrigins() []string {
-	return config.CROSAllowOrigins
-}
-
-func IsReleaseMode() bool {
-	return config.ReleaseMode
-}
-
-func IsForwardedByClientIP() bool {
-	return config.ForwardedByClientIP
+func GetConfig() Config {
+	return config
 }

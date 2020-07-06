@@ -1,13 +1,10 @@
 package controllers
 
 import (
-	"math/rand"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
@@ -19,9 +16,6 @@ const (
 
 	minPasswordLength = 8
 	maxPasswordLength = 64
-
-	verificationCodeLength      = 6
-	maxVerificationCodeTryCount = 100
 )
 
 type fieldType int8
@@ -34,10 +28,10 @@ const (
 
 // UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
-	result := models.User{}
-	err := models.GetUserByID(c.MustGet("userId").(primitive.ObjectID), &result)
+	result, err := models.GetUserByID(c.MustGet("userId").(int64))
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
@@ -63,7 +57,8 @@ func UserLogin(c *gin.Context) {
 	// check if the user exists
 	userExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 	if !userExist {
 		JSONResponse(c, CodeNotExist, "sign up required", nil)
@@ -71,10 +66,10 @@ func UserLogin(c *gin.Context) {
 	}
 
 	// check password
-	result := models.User{}
-	err = models.GetUserByEmail(gEmail, &result)
+	result, err := models.GetUserByEmail(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if !models.CheckPassword(gPassword, result.Password) {
@@ -83,7 +78,7 @@ func UserLogin(c *gin.Context) {
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
-		"token": utils.TokenGenerate(result.ID.Hex()),
+		"token": utils.TokenGenerate(strconv.FormatInt(result.ID, 16)),
 	})
 }
 
@@ -100,18 +95,18 @@ func UserGetSignUpVerification(c *gin.Context) {
 	// check existence of the user
 	userAlreadyExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 	if userAlreadyExist {
 		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
-	var verificationCode string
-
-	userVerificationExist, err := models.CheckUserVerificationExistence(gEmail)
+	userVerificationExist, err := models.CheckEmailVerificationExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if userVerificationExist {
@@ -120,21 +115,18 @@ func UserGetSignUpVerification(c *gin.Context) {
 			"generated": false,
 		})
 	} else {
-		verificationCode = generateVerificationCode()
-		_, err = models.GetUserVerificationCollection().InsertOne(c, &models.UserVerification{
-			Email:            gEmail,
-			VerificationCode: verificationCode,
-			RemainingCount:   maxVerificationCodeTryCount,
-			CreatedAt:        time.Now(),
-		})
+		verificationCode, err := models.CreateEmailVerification(gEmail)
 
 		if err != nil {
-			panic(err)
+			InternalErrorResponse(c, err)
+			return
 		}
 
 		// we only send a verfication code once
 		// until it is invalid due to exceeding limits of trying
 		// or it expires
+
+		// TODO: handle the case where the email is failed to sent
 		utils.SendVerificationEmail(gEmail, verificationCode)
 
 		JSONResponse(c, CodeOK, "", gin.H{
@@ -167,7 +159,8 @@ func UserCreateWithVerification(c *gin.Context) {
 	// check if it is already in the Users table
 	userExist, err := models.CheckUserExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if userExist {
@@ -176,9 +169,10 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	// check if the user exist in UserVerifications table
-	userVerificationExist, err := models.CheckUserVerificationExistence(gEmail)
+	userVerificationExist, err := models.CheckEmailVerificationExistence(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	if !userVerificationExist {
@@ -187,19 +181,18 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 
 	// check if the verification code is correct
-	result := models.UserVerification{}
-	err = models.GetUserVerificationByEmail(gEmail, &result)
+	result, err := models.GetEmailVerificationByEmail(gEmail)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	// exceed the trying limit
 	if result.RemainingCount <= 0 {
-		_, err = models.GetUserVerificationCollection().DeleteOne(c,
-			bson.M{"email": gEmail},
-		)
+		err = models.DeleteEmailVerification(result)
 		if err != nil {
-			panic(err)
+			InternalErrorResponse(c, err)
+			return
 		}
 
 		JSONResponse(c, CodeAuthError, "exceed trying limit", gin.H{
@@ -211,12 +204,11 @@ func UserCreateWithVerification(c *gin.Context) {
 	// incorrect verification code
 	if result.VerificationCode != gVerificationCode {
 		// reduce remaining trying count
-		_, err = models.GetUserVerificationCollection().UpdateOne(c,
-			bson.M{"email": gEmail},
-			bson.M{"$inc": bson.M{"remainingCount": -1}},
-		)
+		result.RemainingCount -= 1
+		err = models.UpdateEmailVerificationRemainingCount(result)
 		if err != nil {
-			panic(err)
+			InternalErrorResponse(c, err)
+			return
 		}
 
 		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
@@ -228,43 +220,18 @@ func UserCreateWithVerification(c *gin.Context) {
 	// insert to User table
 	hash, err := models.HashPassword(gPassword)
 	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
-	userID := primitive.NewObjectID()
-
-	// insert doc containing "foreign key" first
-	err = models.NotificationAddEmail(userID, gEmail, "--default--")
+	err = models.CreateUser(gEmail, hash)
 
 	if err != nil {
-		panic(err)
-	}
-
-	_, err = models.GetUserCollection().InsertOne(c, &models.User{
-		ID:          userID,
-		Email:       gEmail,
-		Password:    hash,
-		TimeCreated: time.Now(),
-	})
-
-	if err != nil {
-		panic(err)
+		InternalErrorResponse(c, err)
+		return
 	}
 
 	JSONResponse(c, CodeOK, "", nil)
-}
-
-// generateVerificationCode outputs a random 6-digit code
-func generateVerificationCode() string {
-	numBytes := [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rst := make([]byte, verificationCodeLength)
-
-	for i := range rst {
-		rst[i] = numBytes[r.Intn(len(numBytes))]
-	}
-
-	return string(rst)
 }
 
 func isFieldInvalid(str string, field fieldType) bool {
@@ -275,7 +242,7 @@ func isFieldInvalid(str string, field fieldType) bool {
 	case passwordField:
 		return len < minPasswordLength || len > maxPasswordLength
 	case verficationCodeField:
-		return len != verificationCodeLength
+		return len != models.VerificationCodeLength
 	default:
 		return true
 	}

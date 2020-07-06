@@ -10,7 +10,7 @@ import (
 var slaveKey string
 
 func init() {
-	slaveKey = config.GetSlaveKey()
+	slaveKey = config.GetConfig().SlaveKey
 }
 
 func SlaveAuth(c *gin.Context) {

@@ -22,7 +22,7 @@ var c config.VerificationEmail
 
 func init() {
 	ch = make(chan *mail.Message, chBuffer)
-	c = config.GetVerificationEmailConfig()
+	c = config.GetConfig().VerificationEmail
 
 	d := mail.NewDialer(c.Server, c.Port, c.Email, c.Password)
 	d.Timeout = 0
@@ -101,7 +101,7 @@ func SendVerificationEmail(e, vc string) {
 // SendEmail takes an email address, a subject and a pointer of the body message
 func SendEmail(e, s string, b *string) {
 
-	if !config.IsReleaseMode() {
+	if !config.GetConfig().ReleaseMode {
 		s = s + " [dev]"
 	}
 

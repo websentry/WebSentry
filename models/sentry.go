@@ -1,185 +1,106 @@
 package models
 
 import (
-	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/gorm"
 )
 
-type SentryImage struct {
-	Time time.Time `bson:"time" json:"time"`
-	File string    `bson:"file" json:"file"`
-}
-
-// Trigger struct contains the config of what will trigger a notification
-type Trigger struct {
-	SimilarityThreshold float64 `bson:"similarityThreshold"`
-}
-
-// type SentryMode int
-
-// const (
-// 	SentryModeImageBased SentryMode = 0
-// )
-
-// Sentry struct is the main one for describing a sentry
-type Sentry struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty"`
-	Name string             `bson:"name"`
-	// Mode          SentryMode             `bson:"mode"`
-	User          primitive.ObjectID     `bson:"user"`
-	Notification  primitive.ObjectID     `bson:"notification"`
-	Trigger       Trigger                `bson:"trigger"`
-	CreateTime    time.Time              `bson:"createTime"`
-	LastCheckTime time.Time              `bson:"lastCheckTime"`
-	NextCheckTime time.Time              `bson:"nextCheckTime"`
-	Interval      int                    `bson:"interval"`
-	CheckCount    int                    `bson:"checkCount"`
-	NotifyCount   int                    `bson:"notifyCount"`
-	Image         SentryImage            `bson:"image"`
-	Task          map[string]interface{} `bson:"task"`
-}
-
-type ImageHistory struct {
-	ID     primitive.ObjectID `bson:"_id,omitempty" json:"-"`
-	Images []SentryImage      `bson:"images" json:"images"`
-}
-
-func GetUncheckedSentry() (*Sentry, error) {
-	c := mongoDB.Collection("Sentries")
-
+// If there isn't an unchecked sentry, it returns (nil, nil, nil)
+func (t TX) GetUncheckedSentry() (*Sentry, *SentryImage, error) {
+	var sResult Sentry
 	now := time.Now()
-
-	// delay selected sentry 10 min
-	update := bson.M{"$set": bson.M{"nextCheckTime": now.Add(time.Minute * 10)}}
-
-	// execute on a sentry that is due
-	var result Sentry
-	filter := bson.M{"nextCheckTime": bson.M{"$lte": now}}
-	opts := options.FindOneAndUpdate().SetSort(bson.M{"nextCheckTime": 1}).SetReturnDocument(options.Before).SetUpsert(false)
-
-	err := c.FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
-	if err == mongo.ErrNoDocuments {
-		return nil, nil
+	err := t.tx.Where("next_check_time <= ?", now).Order("next_check_time").First(&sResult).Error
+	if err != nil {
+		if IsErrNoDocument(err) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
 	}
-	return &result, err
+	// delay selected sentry 10 min
+	err = t.tx.Model(&sResult).Update("next_check_time", now.Add(time.Minute*10)).Error
+	if err != nil {
+		return nil, nil, err
+	}
+	if sResult.LatestImageID == nil {
+		return &sResult, nil, nil
+	}
+	var iResult SentryImage
+	err = t.tx.First(&iResult, *sResult.LatestImageID).Error
+	return &sResult, &iResult, err
 }
 
-func GetUserSentries(user primitive.ObjectID) (results []Sentry, err error) {
-	cur, err := mongoDB.Collection("Sentries").Find(context.TODO(), bson.M{"user": user})
-	if err == nil {
-		err = getAllFromCursor(cur, &results)
-	}
+func (t TX) GetUserSentries(userID int64) (results []Sentry, err error) {
+	err = t.tx.Where(&Sentry{UserID: userID}).Find(&results).Error
 	return
 }
 
-func GetSentry(id primitive.ObjectID) (*Sentry, error) {
-	c := mongoDB.Collection("Sentries")
-
+func (t TX) GetSentry(id int64) (*Sentry, error) {
 	var result Sentry
-	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
+	err := t.tx.First(&result, id).Error
 	return &result, err
 }
 
-func AddSentry(s *Sentry) error {
-	// insert doc containing "foreign key" first
-	_, err := mongoDB.Collection("ImageHistories").InsertOne(context.TODO(), &ImageHistory{
-		ID:     s.ID,
-		Images: []SentryImage{},
-	})
-	if err != nil {
-		return err
+func (t TX) CreateSentry(s *Sentry) (int64, error) {
+	s.ID = snowflakeNode.Generate().Int64()
+	return s.ID, t.tx.Create(s).Error
+}
+
+func (t TX) DeleteSentry(id int64, uid int64) error {
+	res := t.tx.Delete(&Sentry{ID: id, UserID: uid})
+	err := res.Error
+	if err == nil && res.RowsAffected == 0 {
+		err = gorm.ErrRecordNotFound
 	}
-	_, err = mongoDB.Collection("Sentries").InsertOne(context.TODO(), s)
 	return err
 }
 
-func GetImageHistory(id primitive.ObjectID) (*ImageHistory, error) {
-	c := mongoDB.Collection("ImageHistories")
-
-	var result ImageHistory
-	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
-	return &result, err
-}
-
-func GetSentryName(id primitive.ObjectID) (name string, err error) {
-	c := mongoDB.Collection("Sentries")
-
-	var result struct {
-		Name string `bson:"name"`
-	}
-	err = c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
-	if err != nil {
-		return
-	}
-	name = result.Name
+func (t TX) GetImageHistory(id int64) (results []SentryImage, err error) {
+	err = t.tx.Where(&SentryImage{SentryID: id}).Order("created_at DESC").Find(&results).Error
 	return
 }
 
-func GetSentryNotification(id primitive.ObjectID) (nid primitive.ObjectID, err error) {
-	c := mongoDB.Collection("Sentries")
-
-	var result struct {
-		Notification primitive.ObjectID `bson:"notification"`
-	}
-	err = c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
-	if err != nil {
-		return
-	}
-	nid = result.Notification
-	return
+func (t TX) GetSentryName(id int64) (string, error) {
+	var result Sentry
+	err := t.tx.Select("name").First(&result, id).Error
+	return result.Name, err
 }
 
-func UpdateSentryAfterCheck(id primitive.ObjectID, changed bool, newImage string) error {
-	c := mongoDB.Collection("Sentries")
+func (t TX) GetSentryNotification(id int64) (int64, error) {
+	var result Sentry
+	err := t.tx.Select("notification_id").First(&result, id).Error
+	return result.NotificationID, err
+}
 
-	var result struct {
-		Interval   int       `bson:"interval"`
-		CreateTime time.Time `bson:"createTime"`
-	}
+func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 
-	err := c.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&result)
+	var result Sentry
+	err := t.tx.Select("interval, create_at, notify_count, check_count").First(&result, id).Error
 	if err != nil {
 		return err
 	}
 
-	now := time.Now()
-	t := (int(now.Sub(result.CreateTime).Minutes()) / result.Interval) + 1
-	nextTime := result.CreateTime.Add(time.Minute * time.Duration(t*result.Interval))
+	var sentry Sentry
 
-	up := bson.M{
-		"$set": bson.M{"lastCheckTime": now,
-			"nextCheckTime": nextTime},
-		"$inc": bson.M{"checkCount": 1},
-	}
+	now := time.Now()
+	tc := (int(now.Sub(result.CreatedAt).Minutes()) / result.Interval) + 1
+	sentry.LastCheckTime = &now
+	sentry.NextCheckTime = result.CreatedAt.Add(time.Minute * time.Duration(tc*result.Interval))
+	sentry.CheckCount = result.CheckCount + 1
 
 	if changed {
-		// add history
-		c := mongoDB.Collection("ImageHistories")
-		_, err = c.UpdateOne(context.TODO(), bson.M{"_id": id}, bson.M{
-			"$push": bson.M{"images": &SentryImage{Time: now, File: newImage}},
-		})
-
+		// add image history
+		sentryImage := SentryImage{
+			SentryID: id,
+			File:     newImage,
+		}
+		err = t.tx.Create(&sentryImage).Error
 		if err != nil {
 			return err
 		}
+		sentry.LatestImageID = &sentryImage.ID
+		sentry.NotifyCount = result.NotifyCount + 1
 	}
 
-	if changed {
-		up["$inc"].(bson.M)["notifyCount"] = 1
-		up["$set"].(bson.M)["image.time"] = now
-		up["$set"].(bson.M)["image.file"] = newImage
-	}
-
-	c = mongoDB.Collection("Sentries")
-	_, err = c.UpdateOne(context.TODO(), bson.M{"_id": id}, up)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return t.tx.Model(&Sentry{ID: id}).Updates(&sentry).Error
 }

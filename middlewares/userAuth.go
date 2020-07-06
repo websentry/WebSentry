@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/websentry/websentry/controllers"
 	"github.com/websentry/websentry/utils"
@@ -32,13 +34,14 @@ func UserAuthRequired(c *gin.Context) {
 	} else {
 		if u != "" {
 			// success
-			bsonID, err := primitive.ObjectIDFromHex(u)
+			userID, err := strconv.ParseInt(u, 16, 64)
 			if err != nil {
 				controllers.JSONResponse(c, controllers.CodeAuthError, "Uid is invalid", nil)
+				fmt.Print(err)
 				c.Abort()
 			}
 
-			c.Set("userId", bsonID)
+			c.Set("userId", userID)
 			c.Next()
 		} else {
 			controllers.JSONResponse(c, controllers.CodeAuthError, "Uid can not be empty", nil)

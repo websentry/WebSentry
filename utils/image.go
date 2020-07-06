@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"errors"
 	"image"
 	"image/png"
+	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/disintegration/imaging"
+	"github.com/pkg/errors"
 
 	"github.com/websentry/websentry/config"
 )
@@ -20,8 +21,8 @@ const imageFilenameChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1
 var imageBasePath, imageThumbBasePath string
 
 func init() {
-	imageBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "orig")
-	imageThumbBasePath = path.Join(config.GetFileStoragePath(), "sentry", "image", "thumb")
+	imageBasePath = path.Join(config.GetConfig().FileStoragePath, "sentry", "image", "orig")
+	imageThumbBasePath = path.Join(config.GetConfig().FileStoragePath, "sentry", "image", "thumb")
 
 	err := os.MkdirAll(imageBasePath, os.ModePerm)
 	if err != nil {
@@ -75,10 +76,19 @@ func ImageGetFullPath(filename string, thumb bool) string {
 	}
 }
 
+func deleteFileAndIgnoreError(filename string) {
+	err := os.Remove(filename)
+	if err != nil && !os.IsNotExist(err) {
+		err = errors.Wrapf(err, "File: %v", filename)
+		log.Printf("deleteFileAndIgnoreError: \n%+v", err)
+	}
+}
+
+// if failed, only log the error
 func ImageDelete(filename string, keepThumb bool) {
-	os.Remove(ImageGetFullPath(filename, false))
+	deleteFileAndIgnoreError(ImageGetFullPath(filename, false))
 	if !keepThumb {
-		os.Remove(ImageGetFullPath(filename, true))
+		deleteFileAndIgnoreError(ImageGetFullPath(filename, true))
 	}
 }
 
@@ -113,11 +123,13 @@ func ImageSave(image image.Image) (string, error) {
 	filename := ImageRandomFilename()
 
 	err := imaging.Save(image, ImageGetFullPath(filename, false), imaging.PNGCompressionLevel(png.BestCompression))
+	err = errors.WithStack(err)
 	if err != nil {
 		return "", err
 	}
 	// thumb
 	err = imaging.Save(image, ImageGetFullPath(filename, true), imaging.JPEGQuality(70))
+	err = errors.WithStack(err)
 	if err != nil {
 		return "", err
 	}
