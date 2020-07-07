@@ -88,12 +88,6 @@ func generateVerificationCode() string {
 
 // CreateCreateEmailVerification create new verfication code associated with an email address
 func (t TX) CreateEmailVerification(u string) (string, error) {
-	userExist, err := t.CheckUserExistence(u)
-	if err != nil || userExist {
-		return "", err
-	}
-
-	// Email column is unique, create will fail if an entry with the same email adress exists
 	v := EmailVerification{
 		Email:            u,
 		VerificationCode: generateVerificationCode(),
@@ -102,11 +96,7 @@ func (t TX) CreateEmailVerification(u string) (string, error) {
 	}
 
 	// TODO: create a new one or reuse the old one?
-	err = t.tx.Create(&v).Error
-	if err != nil {
-		return "", err
-	}
-
+	err := t.tx.Create(&v).Error
 	return v.VerificationCode, err
 }
 
