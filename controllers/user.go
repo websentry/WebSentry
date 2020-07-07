@@ -181,6 +181,10 @@ func UserCreateWithVerification(c *gin.Context) {
 
 		// check if the verification code is correct
 		emailVerifyInfo, err = tx.GetEmailVerificationByEmail(gEmail)
+		if err != nil {
+			return
+		}
+
 		// gorm cannot update with zero value, unless using pointer in data struct
 		if emailVerifyInfo.RemainingCount <= 1 {
 			exceedLimit = true
