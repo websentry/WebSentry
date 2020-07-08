@@ -12,27 +12,11 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
-
-	"github.com/websentry/websentry/config"
 )
 
 const imageFilenameChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
 var imageBasePath, imageThumbBasePath string
-
-func init() {
-	imageBasePath = path.Join(config.GetConfig().FileStoragePath, "sentry", "image", "orig")
-	imageThumbBasePath = path.Join(config.GetConfig().FileStoragePath, "sentry", "image", "thumb")
-
-	err := os.MkdirAll(imageBasePath, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-	err = os.MkdirAll(imageThumbBasePath, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-}
 
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
