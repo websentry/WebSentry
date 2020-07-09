@@ -20,15 +20,6 @@ const (
 var ch chan *mail.Message
 var c config.VerificationEmail
 
-func init() {
-	ch = make(chan *mail.Message, chBuffer)
-	c = config.GetConfig().VerificationEmail
-
-	d := mail.NewDialer(c.Server, c.Port, c.Email, c.Password)
-	d.Timeout = 0
-	runDaemon(d)
-}
-
 func runDaemon(d *mail.Dialer) {
 	go func() {
 		defer func() {

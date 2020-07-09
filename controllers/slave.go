@@ -72,16 +72,6 @@ type taskQueue struct {
 
 var taskq taskQueue
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-
-	taskq.pQueue = make(chan int32, queueBuffer)
-	taskq.nQueue = make(chan int32, queueBuffer)
-	taskq.info = make(map[int32]*taskInfo)
-
-	go cleanTask()
-}
-
 func cleanTask() {
 	for {
 		time.Sleep(10 * time.Minute)

@@ -5,8 +5,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
-
-	"github.com/websentry/websentry/config"
 )
 
 const (
@@ -26,9 +24,8 @@ var ErrorParseClaim error
 var ErrorTokenRequired error
 
 func init() {
-	if secreteKey == nil {
-		secreteKey = []byte(config.GetConfig().TokenSecretKey)
-	}
+	// TODO: this part is wrong, we are using "github.com/pkg/errors" now
+	// and all of the errors below record here as the call stack.
 
 	// initialize errors
 	ErrorTokenMalformed = errors.New("not even a token")
