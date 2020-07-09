@@ -98,7 +98,7 @@ def run_test(db: str, skip_clean_db: bool, port: int) -> bool:
             service_p.terminate()
         if db_helper is not None:
             db_helper.close()
-    
+
     if is_ok == False:
         print_service_log(service_p)
     return is_ok
@@ -135,16 +135,20 @@ def start_service(tmp_path: str) -> subprocess.Popen:
         ["./websentry", "-c", os.path.join(tmp_path, "config.json")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return service_p
 
+
 def wait_for_service(service_p: subprocess.Popen, service_url: str) -> None:
     for i in range(4):
         check_service_running(service_p)
         try:
             r = requests.get(service_url + "ping")
             if r.text == "pong":
-                break
+                return
         except Exception as e:
             pass
         time.sleep(0.5)
+    r = requests.get(service_url + "ping")
+    assert r.text == "pong"
+
 
 def print_service_log(service_p: subprocess.Popen) -> None:
     print()
@@ -153,6 +157,7 @@ def print_service_log(service_p: subprocess.Popen) -> None:
         output = service_p.stdout.read().decode("utf-8")
         print(output)
     print()
+
 
 def check_service_running(service_p: subprocess.Popen) -> None:
     if service_p.poll() is not None:
