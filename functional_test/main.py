@@ -7,7 +7,9 @@ import time
 import subprocess
 import json
 import requests
+import traceback
 from helper import DBHelper
+from tests import Context, test_cases
 
 
 class Bcolors:
@@ -66,13 +68,29 @@ def run_test(db: str, skip_clean_db: bool, port: int) -> bool:
             db_helper.drop_all_tables()
         service_p = start_service(tmp_dir.name)
         wait_for_service(service_p, service_url)
+        print()
 
         # start running tests
+        c = Context(db_helper, service_url)
+        for i, (name, f) in enumerate(test_cases):
+            print("({}/{}) {}:".format(i+1, len(test_cases), name))
+            try:
+                f(c)
+                print(Bcolors.OKGREEN+"OK"+Bcolors.ENDC)
+                print()
+            except Exception as e:
+                print(Bcolors.FAIL+"FAIL"+Bcolors.ENDC)
+                print(e)
+                traceback.print_exc()
+                print()
+                is_ok = False
+                break
 
     except Exception as e:
         print_service_log(service_p)
         print(Bcolors.FAIL + "Exception occurred during the test:" + Bcolors.ENDC)
         print(e)
+        traceback.print_exc()
         return False
     finally:
         tmp_dir.cleanup()

@@ -16,7 +16,14 @@ class DBHelper:
         self._conn.commit()
         cur.close()
 
+    def get_email_verification_code(self, email: str) -> str:
+        cur = self._conn.cursor()
+        cur.execute(
+            "SELECT verification_code FROM email_verifications WHERE email = %s AND expired_at > now()", (email,))
+        data = cur.fetchone()
+        self._conn.commit()
+        cur.close()
+        return data[0]
+
     def close(self) -> None:
         self._conn.close()
-
-
