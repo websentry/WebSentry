@@ -1,0 +1,40 @@
+name: Go
+
+on:
+  push:
+    branches: [ master, ci ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  main:
+    name: Main
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d ./...
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v1
+      with:
+        # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+        version: v1.26
+
+    - name: Build
+      run: go build -v .
+
+    - name: Functional Test
+      run: |
+        pip3 install -r functional_test/requirements.txt
+        python3 functional_test/main.py
