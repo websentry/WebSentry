@@ -15,7 +15,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_PASSWORD: postgres
-        # The health checks is moved to Wait For Postgres step below
+        # The health checks is moved to "Prepare Functional Test" step below
         # options: >-
         #   --health-cmd pg_isready
         #   --health-interval 10s
@@ -40,18 +40,26 @@ jobs:
         # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
         version: v1.26
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-
+    # dependencies is loaded in "golangci-lint"
     - name: Build
       run: go build -v .
 
-    - name: Wait For Postgres
-      run: timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 5432
+    - name: Prepare Functional Test
+      run: |
+        timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 5432
+        pip3 install -U pip setuptools 
+        pip3 install -r functional_test/requirements.txt
 
     - name: Functional Test
       run: |
-        pip3 install -U pip setuptools 
-        pip3 install -r functional_test/requirements.txt
         python3 functional_test/main.py --db postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable --skip_clean_db true --port 8081
+
+    - name: Build & Push docker image
+      uses: docker/build-push-action@v1
+      if: {{ github.ref == 'ref/head/master' }}
+      with:
+        dockerfile: Dockerfile.ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: websentry/websentry
+        tags: dev

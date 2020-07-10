@@ -1,0 +1,9 @@
+# assuming the websentry already exists
+
+# actual image
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /app/
+COPY templates templates/
+COPY websentry .
+CMD ["./websentry"]
