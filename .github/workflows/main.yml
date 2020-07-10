@@ -1,4 +1,4 @@
-name: Go
+name: Main
 
 on:
   push:
@@ -10,6 +10,18 @@ jobs:
   main:
     name: Main
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
 
     - name: Set up Go 1.x
@@ -25,16 +37,11 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    # - name: golangci-lint
-    #   uses: golangci/golangci-lint-action@v1
-    #   with:
-    #     # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-    #     version: v1.26
-
     - name: golangci-lint
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
-        golangci-lint run
+      uses: golangci/golangci-lint-action@v1
+      with:
+        # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+        version: v1.26
 
     - name: Build
       run: go build -v .
@@ -43,4 +50,4 @@ jobs:
       run: |
         pip3 install -U pip setuptools 
         pip3 install -r functional_test/requirements.txt
-        python3 functional_test/main.py
+        python3 functional_test/main.py --db postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable --skip_clean_db true --port 8081
