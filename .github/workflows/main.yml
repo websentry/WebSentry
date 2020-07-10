@@ -56,7 +56,7 @@ jobs:
 
     - name: Build & Push docker image
       uses: docker/build-push-action@v1
-      if: {{ github.ref == 'ref/head/master' }}
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push' 
       with:
         dockerfile: Dockerfile.ci
         username: ${{ secrets.DOCKER_USERNAME }}
