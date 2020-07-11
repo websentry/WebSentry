@@ -191,11 +191,11 @@ func getTask() (int32, *taskInfo) {
 	}
 }
 
-func SlaveInit(c *gin.Context) {
+func WorkerInit(c *gin.Context) {
 	JSONResponse(c, CodeOK, "", nil)
 }
 
-func SlaveFetchTask(c *gin.Context) {
+func WorkerFetchTask(c *gin.Context) {
 	tid, ti := getTask()
 
 	if tid >= 0 {
@@ -210,7 +210,7 @@ func SlaveFetchTask(c *gin.Context) {
 	}
 }
 
-func SlaveSubmitTask(c *gin.Context) {
+func WorkerSubmitTask(c *gin.Context) {
 	taskq.infoMux.Lock()
 	defer taskq.infoMux.Unlock()
 

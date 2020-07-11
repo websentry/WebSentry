@@ -14,7 +14,7 @@
 
 该仓库仅包含 WebSentry 的主服务代码。对于前端以及渲染从服务代码，请访问：  
 https://github.com/websentry/WebSentry-FrontEnd  
-https://github.com/websentry/WebSentry-Slave
+https://github.com/websentry/WebSentry-Worker
 
 <small>Icons from [icons8](https://icons8.com/)</small>
 
