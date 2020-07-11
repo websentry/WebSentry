@@ -3,6 +3,6 @@ package middlewares
 import "github.com/websentry/websentry/config"
 
 func Init() {
-	// slaveAuth
-	slaveKey = config.GetConfig().SlaveKey
+	// workerAuth
+	workerKey = config.GetConfig().WorkerKey
 }

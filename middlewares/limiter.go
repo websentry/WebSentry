@@ -65,7 +65,7 @@ func GetScreenshotLimiter() gin.HandlerFunc {
 	return limitergin.NewMiddleware(limiter.New(store, rate), options...)
 }
 
-func GetSlaveLimiter() gin.HandlerFunc {
+func GetWorkerLimiter() gin.HandlerFunc {
 	store := memory.NewStore()
 	rate := limiter.Rate{
 		Period: 1 * time.Hour,
