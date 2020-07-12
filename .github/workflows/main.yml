@@ -42,7 +42,7 @@ jobs:
 
     # dependencies is loaded in "golangci-lint"
     - name: Build
-      run: go build -v .
+      run: CGO_ENABLED=0 go build -v .
 
     - name: Prepare Functional Test
       run: |
