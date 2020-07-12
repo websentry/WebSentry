@@ -75,7 +75,7 @@ func (t TX) GetSentryNotification(id int64) (int64, error) {
 func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 
 	var result Sentry
-	err := t.tx.Select("interval, create_at, notify_count, check_count").First(&result, id).Error
+	err := t.tx.Select("interval, created_at, notify_count, check_count").First(&result, id).Error
 	if err != nil {
 		return err
 	}
