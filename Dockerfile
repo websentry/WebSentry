@@ -8,7 +8,7 @@ COPY go.mod .
 RUN go mod download
 # copy & build
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o websentry .
+RUN CGO_ENABLED=0 go build -o websentry .
 
 # actual image
 FROM alpine:latest

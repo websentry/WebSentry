@@ -11,7 +11,7 @@ type Config struct {
 	Database            Database          `json:"database"`
 	VerificationEmail   VerificationEmail `json:"verificationEmail"`
 	FileStoragePath     string            `json:"fileStoragePath"`
-	SlaveKey            string            `json:"slaveKey"`
+	WorkerKey           string            `json:"workerKey"`
 	TokenSecretKey      string            `json:"tokenSecretKey"`
 	BackendURL          string            `json:"backendUrl"`
 	CROSAllowOrigins    []string          `json:"crosAllowOrigins"`

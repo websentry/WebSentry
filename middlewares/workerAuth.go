@@ -6,10 +6,10 @@ import (
 	"github.com/websentry/websentry/controllers"
 )
 
-var slaveKey string
+var workerKey string
 
-func SlaveAuth(c *gin.Context) {
-	if c.GetHeader("WS-Slave-Key") != slaveKey {
+func WorkerAuth(c *gin.Context) {
+	if c.GetHeader("WS-Worker-Key") != workerKey {
 
 		controllers.JSONResponse(c, controllers.CodeAuthError, "", nil)
 

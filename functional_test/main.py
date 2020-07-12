@@ -119,7 +119,7 @@ def build_config(tmp_path: str, db: str, port: int) -> None:
             "password": "password"
         },
         "fileStoragePath": tmp_path,
-        "slaveKey": "testkey",
+        "workerKey": "testkey",
         "tokenSecretKey": "secretkey",
         "backendUrl": "http://127.0.0.1:{}/".format(port),
         "crosAllowOrigins": ["*"],
