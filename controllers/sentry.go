@@ -98,17 +98,23 @@ type SentryImageJson struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
+type NotificationMethodJson struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 type SentryJSON struct {
-	ID            string                     `json:"id"`
-	Name          string                     `json:"name"`
-	Notification  *models.NotificationMethod `json:"notification"`
-	LastCheckTime *time.Time                 `json:"lastCheckTime"`
-	Interval      int                        `json:"interval"`
-	CheckCount    int                        `json:"checkCount"`
-	NotifyCount   int                        `json:"notifyCount"`
-	ImageHistory  []SentryImageJson          `json:"imageHistory"`
-	Task          map[string]interface{}     `json:"task"`
-	CreatedAt     time.Time                  `json:"createdAt"`
+	ID            string                 `json:"id"`
+	Name          string                 `json:"name"`
+	Notification  NotificationMethodJson `json:"notification"`
+	LastCheckTime *time.Time             `json:"lastCheckTime"`
+	Interval      int                    `json:"interval"`
+	CheckCount    int                    `json:"checkCount"`
+	NotifyCount   int                    `json:"notifyCount"`
+	ImageHistory  []SentryImageJson      `json:"imageHistory"`
+	Task          map[string]interface{} `json:"task"`
+	CreatedAt     time.Time              `json:"createdAt"`
 }
 
 func SentryInfo(c *gin.Context) {
@@ -164,8 +170,14 @@ func SentryInfo(c *gin.Context) {
 		return
 	}
 
+	notificationJson := NotificationMethodJson{
+		strconv.FormatInt(notification.ID, 16),
+		notification.Name,
+		notification.Type,
+	}
+
 	sentryJSON := SentryJSON{
-		strconv.FormatInt(s.ID, 16), s.Name, notification, s.LastCheckTime,
+		strconv.FormatInt(s.ID, 16), s.Name, notificationJson, s.LastCheckTime,
 		s.Interval, s.CheckCount, s.NotifyCount,
 		imageHistoryJSON, task, s.CreatedAt,
 	}

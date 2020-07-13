@@ -11,7 +11,9 @@ import (
 
 func setupRouter() *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Logger())
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/v1/worker/fetch_task"},
+	}))
 	r.Use(gin.Recovery())
 
 	// CORS
