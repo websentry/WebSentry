@@ -199,6 +199,15 @@ func WorkerFetchTask(c *gin.Context) {
 	tid, ti := getTask()
 
 	if tid >= 0 {
+		// logging
+		if ti.mode == taskModeFullScreen {
+			log.Printf("Assign full screen task to worker. tid: %v, url: %v \n",
+				tid, ti.task["url"].(string))
+		} else {
+			log.Printf("Assign sentry task to worker. tid: %v, sentryID: %v, url: %v \n",
+				tid, ti.sentryID, ti.task["url"].(string))
+		}
+
 		JSONResponse(c, CodeOK, "", gin.H{
 			"taskId": tid,
 			"task":   ti.task,
@@ -253,6 +262,7 @@ func WorkerSubmitTask(c *gin.Context) {
 	} else {
 		// taskModeSentry
 		go func() {
+			// TODO: handle the case where feedbackCode != 0
 			err = compareSentryTaskImage(int32(tid), ti)
 			if err != nil {
 				log.Printf("[compareSentryTaskImage] Error occurred in task: %d, err: %v", tid, err)
