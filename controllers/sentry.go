@@ -182,10 +182,6 @@ func SentryInfo(c *gin.Context) {
 		imageHistoryJSON, task, s.CreatedAt,
 	}
 
-	if sentryJSON.NotifyCount < 0 {
-		sentryJSON.NotifyCount = 0
-	}
-
 	JSONResponse(c, CodeOK, "", sentryJSON)
 
 }
@@ -250,7 +246,7 @@ func SentryCreate(c *gin.Context) {
 	s.NextCheckTime = time.Now()
 	s.Interval = 4 * 60 // 4 hours
 	s.CheckCount = 0
-	s.NotifyCount = -1 // will be add 1 at the first check
+	s.NotifyCount = 0
 
 	trigger := models.Trigger{SimilarityThreshold: similarityThreshold}
 	triggerJSON, err := json.Marshal(&trigger)

@@ -75,7 +75,7 @@ func (t TX) GetSentryNotification(id int64) (int64, error) {
 func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 
 	var result Sentry
-	err := t.tx.Select("interval, created_at, notify_count, check_count").First(&result, id).Error
+	err := t.tx.Select("interval, created_at, last_check_time, notify_count, check_count").First(&result, id).Error
 	if err != nil {
 		return err
 	}
@@ -84,6 +84,7 @@ func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) erro
 
 	now := time.Now()
 	tc := (int(now.Sub(result.CreatedAt).Minutes()) / result.Interval) + 1
+	firstTime := sentry.LastCheckTime == nil
 	sentry.LastCheckTime = &now
 	sentry.NextCheckTime = result.CreatedAt.Add(time.Minute * time.Duration(tc*result.Interval))
 	sentry.CheckCount = result.CheckCount + 1
@@ -99,7 +100,9 @@ func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) erro
 			return err
 		}
 		sentry.LatestImageID = &sentryImage.ID
-		sentry.NotifyCount = result.NotifyCount + 1
+		if !firstTime {
+			sentry.NotifyCount = result.NotifyCount + 1
+		}
 	}
 
 	return t.tx.Model(&Sentry{ID: id}).Updates(&sentry).Error
