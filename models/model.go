@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // We use [string] to store [JSON] in db. Since for now we don't need to query [JSON] in SQL and using [string] allows
 // us to support more database.
@@ -18,7 +22,7 @@ type User struct {
 	Password  string `gorm:"type:char(60)"`                    // bcrypt
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt *time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 type EmailVerification struct {
@@ -36,7 +40,7 @@ type NotificationMethod struct {
 	Type      string `gorm:"type:varchar(16)"`
 	Setting   string // json
 	CreatedAt time.Time
-	DeletedAt *time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 type Sentry struct {
@@ -53,7 +57,7 @@ type Sentry struct {
 	LatestImageID  *uint  // foreignkey: SentryImage.ID
 	Task           string // json
 	CreatedAt      time.Time
-	DeletedAt      *time.Time
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
 }
 
 type SentryImage struct {
