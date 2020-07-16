@@ -18,9 +18,9 @@
 
 ![architecture image](docs/assets/architecture.png?raw=true)  
 
-This repository only holds the WebSentry Master. For Front-end and Rendering Slave, please visit:  
+This repository only holds the WebSentry Master. For Front-end and Rendering Worker, please visit:  
 https://github.com/websentry/WebSentry-FrontEnd  
-https://github.com/websentry/WebSentry-Slave
+https://github.com/websentry/WebSentry-Worker
 
 <small>Icons from [icons8](https://icons8.com/)</small>
 

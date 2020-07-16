@@ -3,18 +3,13 @@ package middlewares
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/websentry/websentry/config"
 	"github.com/websentry/websentry/controllers"
 )
 
-var slaveKey string
+var workerKey string
 
-func init() {
-	slaveKey = config.GetConfig().SlaveKey
-}
-
-func SlaveAuth(c *gin.Context) {
-	if c.GetHeader("WS-Slave-Key") != slaveKey {
+func WorkerAuth(c *gin.Context) {
+	if c.GetHeader("WS-Worker-Key") != workerKey {
 
 		controllers.JSONResponse(c, controllers.CodeAuthError, "", nil)
 

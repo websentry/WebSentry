@@ -11,14 +11,16 @@ import (
 
 func setupRouter() *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Logger())
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/v1/worker/fetch_task"},
+	}))
 	r.Use(gin.Recovery())
 
 	// CORS
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = config.GetConfig().CROSAllowOrigins
 	corsConfig.AddAllowHeaders("WS-User-Token")
-	corsConfig.AddAllowHeaders("WS-Slave-Key")
+	corsConfig.AddAllowHeaders("WS-Worker-Key")
 	r.Use(cors.New(corsConfig))
 
 	r.GET("/ping", func(c *gin.Context) {
@@ -73,14 +75,14 @@ func setupRouter() *gin.Engine {
 
 		}
 
-		// slave
-		slaveGroup := v1.Group("/slave")
-		slaveGroup.Use(middlewares.SlaveAuth)
-		slaveGroup.Use(middlewares.GetSlaveLimiter())
+		// worker
+		workerGroup := v1.Group("/worker")
+		workerGroup.Use(middlewares.WorkerAuth)
+		workerGroup.Use(middlewares.GetWorkerLimiter())
 		{
-			slaveGroup.POST("/init", controllers.SlaveInit)
-			slaveGroup.POST("/fetch_task", controllers.SlaveFetchTask)
-			slaveGroup.POST("/submit_task", controllers.SlaveSubmitTask)
+			workerGroup.POST("/init", controllers.WorkerInit)
+			workerGroup.POST("/fetch_task", controllers.WorkerFetchTask)
+			workerGroup.POST("/submit_task", controllers.WorkerSubmitTask)
 		}
 
 		// common

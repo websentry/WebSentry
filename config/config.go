@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 )
 
@@ -12,7 +11,7 @@ type Config struct {
 	Database            Database          `json:"database"`
 	VerificationEmail   VerificationEmail `json:"verificationEmail"`
 	FileStoragePath     string            `json:"fileStoragePath"`
-	SlaveKey            string            `json:"slaveKey"`
+	WorkerKey           string            `json:"workerKey"`
 	TokenSecretKey      string            `json:"tokenSecretKey"`
 	BackendURL          string            `json:"backendUrl"`
 	CROSAllowOrigins    []string          `json:"crosAllowOrigins"`
@@ -33,22 +32,20 @@ type VerificationEmail struct {
 
 var config Config
 
-func init() {
-	configFile, err := os.Open("config.json")
+func Load(file string) error {
+	configFile, err := os.Open(file)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	jsonParser := json.NewDecoder(configFile)
 	err = jsonParser.Decode(&config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	err = configFile.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 func GetConfig() Config {
