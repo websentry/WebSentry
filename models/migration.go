@@ -13,12 +13,8 @@ func migrate(db *gorm.DB) error {
 			return
 		}
 
-		dbVersion := SystemSetting{Key: "db_version"}
-		err = tx.Where(&dbVersion).First(&dbVersion).Error
-		if err == gorm.ErrRecordNotFound {
-			tx.Create(&dbVersion)
-			err = nil
-		}
+		var dbVersion SystemSetting
+		err = db.FirstOrCreate(&dbVersion, SystemSetting{Key: "db_version"}).Error
 		if err != nil {
 			return
 		}
@@ -30,8 +26,19 @@ func migrate(db *gorm.DB) error {
 			if err != nil {
 				return
 			}
+		} else {
+			if dbVersionInt == 1 {
+				err = db.Model(&Sentry{}).Where("notify_count = ?", -1).Update("notify_count", 0).Error
+				if err != nil {
+					return
+				}
+				err = tx.AutoMigrate(&User{}, &NotificationMethod{}, &Sentry{})
+				if err != nil {
+					return
+				}
+			}
 		}
-		dbVersion.Value = "1"
+		dbVersion.Value = "2"
 		return tx.Save(&dbVersion).Error
 	})
 }
