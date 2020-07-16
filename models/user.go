@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -108,15 +109,22 @@ func (t TX) UpdateEmailVerificationRemainingCount(e *EmailVerification) error {
 	return t.tx.Select("remaining_count").Updates(e).Error
 }
 
-func (t TX) CreateUser(email string, pwdHash string) error {
+func (t TX) CreateUser(email string, pwdHash string, tz *time.Location, lang language.Tag) error {
 	user := User{
 		ID:       snowflakeNode.Generate().Int64(),
 		Email:    email,
 		Password: pwdHash,
+		Language: lang.String(),
+		TimeZone: tz.String(),
 	}
 	err := t.tx.Create(&user).Error
 	if err != nil {
 		return err
 	}
 	return NotificationAddEmail(user.ID, email, "--default--")
+}
+
+func (t TX) UpdateUser(id int64, u User) error {
+	u.ID = id
+	return t.tx.Model(&u).Updates(u).Error
 }

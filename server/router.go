@@ -48,6 +48,7 @@ func setupRouter() *gin.Engine {
 			userGroup := general.Group("/user")
 			{
 				userGroup.POST("/info", controllers.UserInfo)
+				userGroup.POST("/update", controllers.UserUpdateSettings)
 			}
 
 			// sentry

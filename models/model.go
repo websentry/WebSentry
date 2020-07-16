@@ -20,6 +20,8 @@ type User struct {
 	ID        int64  `gorm:"primary_key;auto_increment:false"` // use snowflake for this ID
 	Email     string `gorm:"type:varchar(255);unique_index"`   // lower case
 	Password  string `gorm:"type:char(60)"`                    // bcrypt
+	Language  string `gorm:"type:varchar(10)"`
+	TimeZone  string `gorm:"type:varchar(64)"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

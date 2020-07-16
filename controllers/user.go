@@ -182,8 +182,6 @@ func UserCreateWithVerification(c *gin.Context) {
 	}
 	lang, _, _ := languageMatcher.Match(language.Make(c.DefaultQuery("lang", "")))
 
-	print(tz, lang)
-
 	var userExist, userVerificationExist, exceedLimit, incorrectPwd bool
 	var emailVerifyInfo *models.EmailVerification
 
@@ -228,7 +226,7 @@ func UserCreateWithVerification(c *gin.Context) {
 			return
 		}
 
-		err = tx.CreateUser(gEmail, hash)
+		err = tx.CreateUser(gEmail, hash, tz, lang)
 		if err != nil {
 			return
 		}
@@ -259,6 +257,47 @@ func UserCreateWithVerification(c *gin.Context) {
 		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
 			"expired": false,
 		})
+		return
+	}
+
+	JSONResponse(c, CodeOK, "", nil)
+}
+
+func UserUpdateSettings(c *gin.Context) {
+	updated := false
+	var user models.User
+
+	// timezone
+	tzStr, isSet := c.GetQuery("tz")
+	if isSet {
+		updated = true
+		tz, err := time.LoadLocation(tzStr)
+		if err != nil {
+			JSONResponse(c, CodeWrongParam, "timezone format is invalid", nil)
+			return
+		}
+		user.TimeZone = tz.String()
+	}
+
+	// language
+	langStr, isSet := c.GetQuery("lang")
+	if isSet {
+		updated = true
+		lang, _, _ := languageMatcher.Match(language.Make(langStr))
+		user.Language = lang.String()
+	}
+
+	if !updated {
+		JSONResponse(c, CodeWrongParam, "no field provided for update", nil)
+		return
+	}
+
+	err := models.Transaction(func(tx models.TX) (err error) {
+		return tx.UpdateUser(c.MustGet("userId").(int64), user)
+	})
+
+	if err != nil {
+		InternalErrorResponse(c, err)
 		return
 	}
 
