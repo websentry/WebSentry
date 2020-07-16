@@ -8,26 +8,24 @@ import (
 )
 
 const (
-	encryptionCost = 14
-
-	VerificationCodeLength      = 6
-	maxVerificationCodeTryCount = 100
+	encryptionCost         = 14
+	VerificationCodeLength = 6
 )
 
-func (t TX) CheckUserExistence(u string) (bool, error) {
-	var count int64
-	// TODO: not sure why the call to [Model] is required
-	err := t.tx.Model(&User{}).Where(&User{Email: u}).Count(&count).Error
-	return count == 1, err
-}
+// func (t TX) CheckUserExistence(u string) (bool, error) {
+// 	var count int64
+// 	// TODO: not sure why the call to [Model] is required
+// 	err := t.tx.Model(&User{}).Where(&User{Email: u}).Count(&count).Error
+// 	return count == 1, err
+// }
 
-// CheckEmailVerificationExistence finds out whether an user's verification code is already existed or not
-// It takes a string represents the email
-func (t TX) CheckEmailVerificationExistence(u string) (bool, error) {
-	var count int64
-	err := t.tx.Model(&EmailVerification{}).Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).Count(&count).Error
-	return count == 1, err
-}
+// // CheckEmailVerificationExistence finds out whether an user's verification code is already existed or not
+// // It takes a string represents the email
+// func (t TX) CheckEmailVerificationExistence(u string) (bool, error) {
+// 	var count int64
+// 	err := t.tx.Model(&EmailVerification{}).Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).Count(&count).Error
+// 	return count == 1, err
+// }
 
 // GetUserByEmail get the user's information
 // It takes an email and a struct to store the result
@@ -88,10 +86,10 @@ func generateVerificationCode() string {
 
 // CreateCreateEmailVerification create new verfication code associated with an email address
 func (t TX) CreateEmailVerification(u string) (string, error) {
+
 	v := EmailVerification{
 		Email:            u,
 		VerificationCode: generateVerificationCode(),
-		RemainingCount:   maxVerificationCodeTryCount,
 		ExpiredAt:        time.Now().Add(time.Hour),
 	}
 
@@ -102,10 +100,6 @@ func (t TX) CreateEmailVerification(u string) (string, error) {
 
 func (t TX) DeleteEmailVerification(e *EmailVerification) error {
 	return t.tx.Delete(&e).Error
-}
-
-func (t TX) UpdateEmailVerificationRemainingCount(e *EmailVerification) error {
-	return t.tx.Select("remaining_count").Updates(e).Error
 }
 
 func (t TX) CreateUser(email string, pwdHash string) error {

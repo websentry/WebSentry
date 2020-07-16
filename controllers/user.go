@@ -85,8 +85,8 @@ func UserLogin(c *gin.Context) {
 	})
 }
 
-// UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
-func UserGetSignUpVerification(c *gin.Context) {
+// UserSendVerification gets user email, generate Verification code and wait to be validated
+func UserSendVerification(c *gin.Context) {
 	gEmail := getFormattedEmail(c)
 
 	// TODO: email check
@@ -96,19 +96,9 @@ func UserGetSignUpVerification(c *gin.Context) {
 	}
 
 	var userAlreadyExist, userVerificationExist bool
-	var verificationCode string
+	var verificationCode *string
 
 	err := models.Transaction(func(tx models.TX) (err error) {
-		userAlreadyExist, err = tx.CheckUserExistence(gEmail)
-		if userAlreadyExist || err != nil {
-			return
-		}
-
-		userVerificationExist, err = tx.CheckEmailVerificationExistence(gEmail)
-		if userVerificationExist || err != nil {
-			return
-		}
-
 		verificationCode, err = tx.CreateEmailVerification(gEmail)
 		return
 	})
@@ -163,38 +153,15 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	var userExist, userVerificationExist, exceedLimit, incorrectPwd bool
 	var emailVerifyInfo *models.EmailVerification
 
 	err := models.Transaction(func(tx models.TX) (err error) {
-		// check if it is already in the Users table
-		userExist, err = tx.CheckUserExistence(gEmail)
-		if userExist || err != nil {
-			return
-		}
-
-		// check if the user exist in UserVerifications table
-		userVerificationExist, err = tx.CheckEmailVerificationExistence(gEmail)
-		if !userVerificationExist || err != nil {
-			return
-		}
-
-		// check if the verification code is correct
 		emailVerifyInfo, err = tx.GetEmailVerificationByEmail(gEmail)
 		if err != nil {
 			return
 		}
 
-		// gorm cannot update with zero value, unless using pointer in data struct
-		if emailVerifyInfo.RemainingCount <= 1 {
-			exceedLimit = true
-			err = tx.DeleteEmailVerification(emailVerifyInfo)
-			return
-		}
-		exceedLimit = false
-
 		if emailVerifyInfo.VerificationCode != gVerificationCode {
-			emailVerifyInfo.RemainingCount--
 			incorrectPwd = true
 			err = tx.UpdateEmailVerificationRemainingCount(emailVerifyInfo)
 			return
@@ -227,17 +194,8 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	if exceedLimit {
-		JSONResponse(c, CodeAuthError, "exceed trying limit", gin.H{
-			"expired": true,
-		})
-		return
-	}
-
 	if incorrectPwd {
-		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
-			"expired": false,
-		})
+		JSONResponse(c, CodeAuthError, "", nil)
 		return
 	}
 
