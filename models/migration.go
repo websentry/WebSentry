@@ -28,6 +28,22 @@ func migrate(db *gorm.DB) error {
 			}
 		} else {
 			if dbVersionInt == 1 {
+				err = db.Model(&Sentry{}).Where("notify_count = ?", -1).Update("notify_count", 0).Error
+				if err != nil {
+					return
+				}
+				err = db.Migrator().AlterColumn(&User{}, "DeletedAt")
+				if err != nil {
+					return
+				}
+				err = db.Migrator().AlterColumn(&NotificationMethod{}, "DeletedAt")
+				if err != nil {
+					return
+				}
+				err = db.Migrator().AlterColumn(&Sentry{}, "DeletedAt")
+				if err != nil {
+					return
+				}
 				err = tx.AutoMigrate(&User{}, &NotificationMethod{}, &Sentry{})
 				if err != nil {
 					return

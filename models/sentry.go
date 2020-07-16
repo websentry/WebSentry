@@ -62,20 +62,20 @@ func (t TX) GetImageHistory(id int64) (results []SentryImage, err error) {
 
 func (t TX) GetSentryName(id int64) (string, error) {
 	var result Sentry
-	err := t.tx.Select("Name").First(&result, id).Error
+	err := t.tx.Select("name").First(&result, id).Error
 	return result.Name, err
 }
 
 func (t TX) GetSentryNotification(id int64) (int64, error) {
 	var result Sentry
-	err := t.tx.Select("NotificationID").First(&result, id).Error
+	err := t.tx.Select("notification_id").First(&result, id).Error
 	return result.NotificationID, err
 }
 
 func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 
 	var result Sentry
-	err := t.tx.Select("Interval, CreatedAt, LastCheckTime, NotifyCount, CheckCount").First(&result, id).Error
+	err := t.tx.Select("interval, created_at, notify_count, check_count").First(&result, id).Error
 	if err != nil {
 		return err
 	}
