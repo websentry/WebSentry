@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 go build -o websentry .
 
 # actual image
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app/
 COPY templates templates/
 COPY --from=builder /src/websentry .
