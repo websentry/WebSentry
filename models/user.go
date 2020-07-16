@@ -22,14 +22,6 @@ func (t TX) CheckUserExistence(u string) (bool, error) {
 	return count == 1, err
 }
 
-// // CheckEmailVerificationExistence finds out whether an user's verification code is already existed or not
-// // It takes a string represents the email
-// func (t TX) CheckEmailVerificationExistence(u string) (bool, error) {
-// 	var count int64
-// 	err := t.tx.Model(&EmailVerification{}).Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).Count(&count).Error
-// 	return count == 1, err
-// }
-
 func (t TX) UserLogin(u, p string) (*int64, error) {
 	var result User
 	err := t.tx.Where(&User{Email: u}).First(&result).Error
@@ -46,14 +38,6 @@ func (t TX) UserLogin(u, p string) (*int64, error) {
 
 	return &result.ID, err
 }
-
-// // GetEmailVerificationByEmail get the user's verification by email
-// // It takes an email and a struct to store the result
-// func (t TX) GetEmailVerificationByEmail(u string) (*EmailVerification, error) {
-// 	var result EmailVerification
-// 	err := t.tx.Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).First(&result).Error
-// 	return &result, err
-// }
 
 // GetUserByID get the user's information by his id,
 // it takes a id, and a result structure
