@@ -64,10 +64,9 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	var userInfo *models.User
-
+	var userID *int64
 	err := models.Transaction(func(tx models.TX) (err error) {
-		userInfo, err = tx.GetUserByEmail(gEmail)
+		userID, err = tx.UserLogin(gEmail, gPassword)
 		return
 	})
 	if err != nil {
@@ -75,18 +74,50 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	if userInfo == nil || !models.CheckPassword(gPassword, userInfo.Password) {
+	if userID == nil {
 		JSONResponse(c, CodeAuthError, "incorrect email/password", nil)
 		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
-		"token": utils.TokenGenerate(strconv.FormatInt(userInfo.ID, 16)),
+		"token": utils.TokenGenerate(strconv.FormatInt(*userID, 16)),
 	})
 }
 
-// UserSendVerification gets user email, generate Verification code and wait to be validated
-func UserSendVerification(c *gin.Context) {
+// generate and send verification code if the given existency condition is met
+func userSendVerificationCodeEmail(u string, userExistCondition bool) (bool, error) {
+	var vc string
+	var userAlreadyExist bool
+
+	err := models.Transaction(func(tx models.TX) (err error) {
+		userAlreadyExist, err = tx.CheckUserExistence(u)
+		if userAlreadyExist {
+			return
+		}
+
+		vc, err = tx.CreateEmailVerification(u)
+		return
+	})
+	if err != nil {
+		return false, err
+	}
+
+	if userAlreadyExist != userExistCondition {
+		return false, nil
+	}
+
+	// we only send a verfication code once
+	// until it is invalid due to exceeding limits of trying
+	// or it expires
+
+	// TODO: handle the case where the email is failed to sent
+	utils.SendVerificationEmail(u, vc)
+
+	return true, nil
+}
+
+// UserGetSignUpVerification gets user email, generate Verification code and wait to be validated
+func UserGetSignUpVerification(c *gin.Context) {
 	gEmail := getFormattedEmail(c)
 
 	// TODO: email check
@@ -95,37 +126,17 @@ func UserSendVerification(c *gin.Context) {
 		return
 	}
 
-	var userAlreadyExist, userVerificationExist bool
-	var verificationCode *string
-
-	err := models.Transaction(func(tx models.TX) (err error) {
-		verificationCode, err = tx.CreateEmailVerification(gEmail)
-		return
-	})
+	// the user should not exist
+	sent, err := userSendVerificationCodeEmail(gEmail, false)
 	if err != nil {
 		InternalErrorResponse(c, err)
 		return
 	}
 
-	if userAlreadyExist {
+	if !sent {
 		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
-
-	if userVerificationExist {
-		// verfication code still valid
-		JSONResponse(c, CodeOK, "", gin.H{
-			"generated": false,
-		})
-		return
-	}
-
-	// we only send a verfication code once
-	// until it is invalid due to exceeding limits of trying
-	// or it expires
-
-	// TODO: handle the case where the email is failed to sent
-	utils.SendVerificationEmail(gEmail, verificationCode)
 
 	JSONResponse(c, CodeOK, "", gin.H{
 		"generated": true,
@@ -153,34 +164,23 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	var emailVerifyInfo *models.EmailVerification
-
+	var correctVc, userAlreadyExist bool
 	err := models.Transaction(func(tx models.TX) (err error) {
-		emailVerifyInfo, err = tx.GetEmailVerificationByEmail(gEmail)
+		correctVc, err = tx.CheckVerficationCode(gEmail, gVerificationCode)
+		if !correctVc || err != nil {
+			return
+		}
+
+		userAlreadyExist, err = tx.CheckUserExistence(gEmail)
+		if userAlreadyExist || err != nil {
+			return
+		}
+
+		err = tx.CreateUser(gEmail, gPassword)
 		if err != nil {
 			return
 		}
 
-		if emailVerifyInfo.VerificationCode != gVerificationCode {
-			incorrectPwd = true
-			err = tx.UpdateEmailVerificationRemainingCount(emailVerifyInfo)
-			return
-		}
-		incorrectPwd = false
-
-		// insert to User table
-		hash, err := models.HashPassword(gPassword)
-		if err != nil {
-			return
-		}
-
-		err = tx.CreateUser(gEmail, hash)
-		if err != nil {
-			return
-		}
-
-		// delete used verification code
-		err = tx.DeleteEmailVerification(emailVerifyInfo)
 		return
 	})
 	if err != nil {
@@ -188,14 +188,13 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	// hide details to front-end
-	if userExist || !userVerificationExist {
+	if !correctVc {
 		JSONResponse(c, CodeAuthError, "", nil)
 		return
 	}
 
-	if incorrectPwd {
-		JSONResponse(c, CodeAuthError, "", nil)
+	if userAlreadyExist {
+		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 
