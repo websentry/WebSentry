@@ -85,13 +85,19 @@ func UserLogin(c *gin.Context) {
 }
 
 // generate and send verification code if the given existency condition is met
-func userSendVerificationCodeEmail(u string, userExistCondition bool) (bool, error) {
+func userSendVerificationCodeEmail(c *gin.Context, u string, userExistCondition bool) bool {
 	var vc string
-	var userAlreadyExist bool
+	var userRst, exceededLimit bool
 
 	err := models.Transaction(func(tx models.TX) (err error) {
-		userAlreadyExist, err = tx.CheckUserExistence(u)
-		if userAlreadyExist {
+		userRst, err = tx.CheckUserExistence(u)
+		userRst = userRst != userExistCondition
+		if userRst || err != nil {
+			return
+		}
+
+		exceededLimit, err = tx.IsLastVerificationCodeGeneratedTimeExceeded(u)
+		if exceededLimit || err != nil {
 			return
 		}
 
@@ -99,11 +105,22 @@ func userSendVerificationCodeEmail(u string, userExistCondition bool) (bool, err
 		return
 	})
 	if err != nil {
-		return false, err
+		InternalErrorResponse(c, err)
+		return false
 	}
 
-	if userAlreadyExist != userExistCondition {
-		return false, nil
+	if userRst {
+		if userExistCondition {
+			JSONResponse(c, CodeWrongParam, "", nil)
+		} else {
+			JSONResponse(c, CodeAlreadyExist, "", nil)
+		}
+		return false
+	}
+
+	if exceededLimit {
+		JSONResponse(c, CodeExceededLimits, "", nil)
+		return false
 	}
 
 	// we only send a verfication code once
@@ -113,7 +130,7 @@ func userSendVerificationCodeEmail(u string, userExistCondition bool) (bool, err
 	// TODO: handle the case where the email is failed to sent
 	utils.SendVerificationEmail(u, vc)
 
-	return true, nil
+	return true
 }
 
 // UserGetSignUpVerification gets user email, generate Verification code and wait to be validated
@@ -127,20 +144,11 @@ func UserGetSignUpVerification(c *gin.Context) {
 	}
 
 	// the user should not exist
-	sent, err := userSendVerificationCodeEmail(gEmail, false)
-	if err != nil {
-		InternalErrorResponse(c, err)
-		return
+	if userSendVerificationCodeEmail(c, gEmail, false) {
+		JSONResponse(c, CodeOK, "", gin.H{
+			"generated": true,
+		})
 	}
-
-	if !sent {
-		JSONResponse(c, CodeAlreadyExist, "", nil)
-		return
-	}
-
-	JSONResponse(c, CodeOK, "", gin.H{
-		"generated": true,
-	})
 }
 
 // UserCreateWithVerification checks verification code and create the user in the user database

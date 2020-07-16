@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	encryptionCost                = 14
-	verificationCodeValidDuration = 10 * time.Minute
+	encryptionCost                  = 14
+	verificationCodeValidDuration   = 10 * time.Minute
+	verficationCodeGenerateDuration = 1 * time.Minute
 
 	VerificationCodeLength = 6
 )
@@ -89,6 +90,27 @@ func generateVerificationCode() string {
 	return string(rst)
 }
 
+// IsLastVerificationCodeGeneratedTimeExceeded checks if the current is within the duration allowed
+// starting from when the latest verification code is created
+func (t TX) IsLastVerificationCodeGeneratedTimeExceeded(u string) (bool, error) {
+	var result EmailVerification
+	err := t.tx.Where(&EmailVerification{Email: u}).Order("expired_at desc").First(&result).Error
+	if err != nil {
+		if IsErrNoDocument(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	threasholdTime := result.ExpiredAt.Add(-verificationCodeValidDuration).Add(verficationCodeGenerateDuration)
+	diff := time.Now().Sub(threasholdTime)
+
+	if diff < 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 // CreateCreateEmailVerification create new verfication code associated with an email address
 func (t TX) CreateEmailVerification(u string) (string, error) {
 	v := EmailVerification{
@@ -102,10 +124,7 @@ func (t TX) CreateEmailVerification(u string) (string, error) {
 	return v.VerificationCode, err
 }
 
-func (t TX) DeleteEmailVerification(e *EmailVerification) error {
-	return t.tx.Delete(&e).Error
-}
-
+// CheckVerficationCode checks if the given verification code is one of the non-expired verification existed in the db
 func (t TX) CheckVerficationCode(u string, vc string) (bool, error) {
 	var result EmailVerification
 	err := t.tx.Where(&EmailVerification{Email: u, VerificationCode: vc}).Where("expired_at >= ?", time.Now()).First(&result).Error
@@ -118,6 +137,7 @@ func (t TX) CheckVerficationCode(u string, vc string) (bool, error) {
 	return true, nil
 }
 
+// CreateUser add a new user and the default notification method
 func (t TX) CreateUser(u string, pwdHash string) error {
 	h, err := hashPassword(pwdHash)
 	if err != nil {
