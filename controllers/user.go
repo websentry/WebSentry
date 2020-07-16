@@ -3,8 +3,10 @@ package controllers
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/text/language"
 
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
@@ -25,6 +27,16 @@ const (
 	passwordField
 	verficationCodeField
 )
+
+var languageMatcher language.Matcher
+
+func init() {
+	tags := []language.Tag{
+		language.AmericanEnglish,   // en-US  fallback to this one
+		language.SimplifiedChinese, // zh-Hans
+	}
+	languageMatcher = language.NewMatcher(tags)
+}
 
 // UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
@@ -163,10 +175,19 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
+	tz, err := time.LoadLocation(c.DefaultQuery("tz", "Asia/Shanghai"))
+	if err != nil {
+		JSONResponse(c, CodeWrongParam, "timezone format is invalid", nil)
+		return
+	}
+	lang, _, _ := languageMatcher.Match(language.Make(c.DefaultQuery("lang", "")))
+
+	print(tz, lang)
+
 	var userExist, userVerificationExist, exceedLimit, incorrectPwd bool
 	var emailVerifyInfo *models.EmailVerification
 
-	err := models.Transaction(func(tx models.TX) (err error) {
+	err = models.Transaction(func(tx models.TX) (err error) {
 		// check if it is already in the Users table
 		userExist, err = tx.CheckUserExistence(gEmail)
 		if userExist || err != nil {
