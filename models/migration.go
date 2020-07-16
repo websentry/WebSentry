@@ -32,18 +32,6 @@ func migrate(db *gorm.DB) error {
 				if err != nil {
 					return
 				}
-				err = db.Migrator().AlterColumn(&User{}, "DeletedAt")
-				if err != nil {
-					return
-				}
-				err = db.Migrator().AlterColumn(&NotificationMethod{}, "DeletedAt")
-				if err != nil {
-					return
-				}
-				err = db.Migrator().AlterColumn(&Sentry{}, "DeletedAt")
-				if err != nil {
-					return
-				}
 				err = tx.AutoMigrate(&User{}, &NotificationMethod{}, &Sentry{})
 				if err != nil {
 					return
