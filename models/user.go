@@ -87,7 +87,7 @@ func (t TX) IsLastVerificationCodeGeneratedTimeExceeded(u string) (bool, error) 
 	}
 
 	threasholdTime := result.ExpiredAt.Add(-verificationCodeValidDuration).Add(verficationCodeGenerateDuration)
-	diff := time.Now().Sub(threasholdTime)
+	diff := time.Since(threasholdTime)
 
 	if diff < 0 {
 		return true, nil
