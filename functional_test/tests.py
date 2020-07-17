@@ -34,6 +34,52 @@ def register_user(c: Context) -> None:
 
     # register
     r = requests.post(c.service_url + "v1/create_user",
-                      params={"email": USER1_EMAIL, "verification": code}, data={"password": USER1_PWD})
+                      params={"email": USER1_EMAIL, "verification": code, "tz": "Asia/Shanghai", "lang": "en-US"}, data={"password": USER1_PWD})
     j = r.json()
     assert j["code"] == 0
+
+
+@test_case
+def login_user(c: Context) -> None:
+    r = requests.post(c.service_url + "v1/login",
+                      params={"email": USER1_EMAIL}, data={"password": USER1_PWD})
+    j = r.json()
+    print(j)
+    assert j["code"] == 0
+    global USER1_TOKEN
+    USER1_TOKEN = j["data"]["token"]
+
+
+@test_case
+def user_info(c: Context) -> None:
+    r = requests.post(c.service_url + "v1/user/info",
+                      headers={"WS-User-Token": USER1_TOKEN})
+    j = r.json()
+    print(j)
+    assert j["code"] == 0
+    assert j["data"]["language"] == "en-US"
+    assert j["data"]["timeZone"] == "Asia/Shanghai"
+
+
+@test_case
+def update_user_setting(c: Context) -> None:
+    # Note: one can also update multiple value at the same time
+    r = requests.post(c.service_url + "v1/user/update", headers={"WS-User-Token": USER1_TOKEN},
+                      params={"tz": "Australia/Melbourne"})
+    j = r.json()
+    print(j)
+    assert j["code"] == 0
+
+    r = requests.post(c.service_url + "v1/user/update", headers={"WS-User-Token": USER1_TOKEN},
+                      params={"lang": "zh-Hans"})
+    j = r.json()
+    print(j)
+    assert j["code"] == 0
+
+    r = requests.post(c.service_url + "v1/user/info",
+                      headers={"WS-User-Token": USER1_TOKEN})
+    j = r.json()
+    print(j)
+    assert j["code"] == 0
+    assert j["data"]["language"] == "zh-Hans"
+    assert j["data"]["timeZone"] == "Australia/Melbourne"
