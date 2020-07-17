@@ -36,7 +36,6 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		// use uid from notification, not a good approach
 		userData, err = tx.GetUserByID(n.UserID)
 		return errors.WithStack(err)
 	})
