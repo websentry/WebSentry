@@ -141,3 +141,5 @@ func (t TX) CreateUser(u string, pwdHash string) error {
 
 	return NotificationAddEmail(user.ID, u, "--default--")
 }
+
+// TODO: Cleanup tables withe ExpireAt fields

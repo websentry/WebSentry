@@ -84,55 +84,6 @@ func UserLogin(c *gin.Context) {
 	})
 }
 
-// generate and send verification code if the given existency condition is met
-func userSendVerificationCodeEmail(c *gin.Context, u string, userExistCondition bool) bool {
-	var vc string
-	var userRst, exceededLimit bool
-
-	err := models.Transaction(func(tx models.TX) (err error) {
-		userRst, err = tx.CheckUserExistence(u)
-		userRst = userRst != userExistCondition
-		if userRst || err != nil {
-			return
-		}
-
-		exceededLimit, err = tx.IsLastVerificationCodeGeneratedTimeExceeded(u)
-		if exceededLimit || err != nil {
-			return
-		}
-
-		vc, err = tx.CreateEmailVerification(u)
-		return
-	})
-	if err != nil {
-		InternalErrorResponse(c, err)
-		return false
-	}
-
-	if userRst {
-		if userExistCondition {
-			JSONResponse(c, CodeWrongParam, "", nil)
-		} else {
-			JSONResponse(c, CodeAlreadyExist, "", nil)
-		}
-		return false
-	}
-
-	if exceededLimit {
-		JSONResponse(c, CodeExceededLimits, "", nil)
-		return false
-	}
-
-	// we only send a verfication code once
-	// until it is invalid due to exceeding limits of trying
-	// or it expires
-
-	// TODO: handle the case where the email is failed to sent
-	utils.SendVerificationEmail(u, vc)
-
-	return true
-}
-
 // UserGetSignUpVerification gets user email, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
 	gEmail := getFormattedEmail(c)
@@ -143,12 +94,47 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	// the user should not exist
-	if userSendVerificationCodeEmail(c, gEmail, false) {
-		JSONResponse(c, CodeOK, "", gin.H{
-			"generated": true,
-		})
+	var vc string
+	var userAlreadyExist, exceededLimit bool
+
+	err := models.Transaction(func(tx models.TX) (err error) {
+		userAlreadyExist, err = tx.CheckUserExistence(gEmail)
+		if userAlreadyExist || err != nil {
+			return
+		}
+
+		exceededLimit, err = tx.IsLastVerificationCodeGeneratedTimeExceeded(gEmail)
+		if exceededLimit || err != nil {
+			return
+		}
+
+		vc, err = tx.CreateEmailVerification(gEmail)
+		return
+	})
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
 	}
+
+	if userAlreadyExist {
+		JSONResponse(c, CodeAlreadyExist, "", nil)
+		return
+	}
+
+	if exceededLimit {
+		JSONResponse(c, CodeExceededLimits, "", nil)
+		return
+	}
+
+	// we only send a verfication code once
+	// until it is invalid due to exceeding limits of trying
+	// or it expires
+
+	// TODO: handle the case where the email is failed to sent
+	utils.SendVerificationEmail(gEmail, vc)
+
+	// the user should not exist
+	JSONResponse(c, CodeOK, "", nil)
 }
 
 // UserCreateWithVerification checks verification code and create the user in the user database
