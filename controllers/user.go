@@ -25,7 +25,7 @@ type fieldType int8
 const (
 	emailField fieldType = iota
 	passwordField
-	verficationCodeField
+	verificationCodeField
 )
 
 var languageMatcher language.Matcher
@@ -138,7 +138,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	// we only send a verfication code once
+	// we only send a verification code once
 	// until it is invalid due to exceeding limits of trying
 	// or it expires
 
@@ -165,7 +165,7 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	if isFieldInvalid(gVerificationCode, verficationCodeField) {
+	if isFieldInvalid(gVerificationCode, verificationCodeField) {
 		JSONResponse(c, CodeWrongParam, "Verification format is invalid", nil)
 		return
 	}
@@ -179,7 +179,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	var correctVc, userAlreadyExist bool
 	err = models.Transaction(func(tx models.TX) (err error) {
-		correctVc, err = tx.CheckVerficationCode(gEmail, gVerificationCode)
+		correctVc, err = tx.CheckverificationCode(gEmail, gVerificationCode)
 		if !correctVc || err != nil {
 			return
 		}
@@ -262,7 +262,7 @@ func isFieldInvalid(str string, field fieldType) bool {
 		return len < minEmailLength || len > maxEmailLength
 	case passwordField:
 		return len < minPasswordLength || len > maxPasswordLength
-	case verficationCodeField:
+	case verificationCodeField:
 		return len != models.VerificationCodeLength
 	default:
 		return true

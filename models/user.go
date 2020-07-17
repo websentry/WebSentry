@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	encryptionCost                  = 14
-	verificationCodeValidDuration   = 10 * time.Minute
-	verficationCodeGenerateDuration = 1 * time.Minute
+	encryptionCost                   = 14
+	verificationCodeValidDuration    = 10 * time.Minute
+	verificationCodeGenerateDuration = 1 * time.Minute
 
 	VerificationCodeLength = 6
 )
@@ -87,8 +87,8 @@ func (t TX) IsLastVerificationCodeGeneratedTimeExceeded(u string) (bool, error) 
 		return false, err
 	}
 
-	threasholdTime := result.ExpiredAt.Add(-verificationCodeValidDuration).Add(verficationCodeGenerateDuration)
-	diff := time.Since(threasholdTime)
+	thresholdTime := result.ExpiredAt.Add(-verificationCodeValidDuration).Add(verificationCodeGenerateDuration)
+	diff := time.Since(thresholdTime)
 
 	if diff < 0 {
 		return true, nil
@@ -96,7 +96,7 @@ func (t TX) IsLastVerificationCodeGeneratedTimeExceeded(u string) (bool, error) 
 	return false, nil
 }
 
-// CreateCreateEmailVerification create new verfication code associated with an email address
+// CreateCreateEmailVerification create new verification code associated with an email address
 func (t TX) CreateEmailVerification(u string) (string, error) {
 	v := EmailVerification{
 		Email:            u,
@@ -104,13 +104,13 @@ func (t TX) CreateEmailVerification(u string) (string, error) {
 		ExpiredAt:        time.Now().Add(verificationCodeValidDuration),
 	}
 
-	// there may exist multiple verfication codes that are valid to the user
+	// there may exist multiple verification codes that are valid to the user
 	err := t.tx.Create(&v).Error
 	return v.VerificationCode, err
 }
 
-// CheckVerficationCode checks if the given verification code is one of the non-expired verification existed in the db
-func (t TX) CheckVerficationCode(u string, vc string) (bool, error) {
+// CheckverificationCode checks if the given verification code is one of the non-expired verification existed in the db
+func (t TX) CheckverificationCode(u string, vc string) (bool, error) {
 	var result EmailVerification
 	err := t.tx.Where(&EmailVerification{Email: u, VerificationCode: vc}).Where("expired_at >= ?", time.Now()).First(&result).Error
 	if err != nil {
