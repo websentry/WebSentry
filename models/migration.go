@@ -38,7 +38,19 @@ func migrate(db *gorm.DB) error {
 				}
 				dbVersionInt = 2
 			}
+
 			if dbVersionInt == 2 {
+				err = tx.AutoMigrate(&EmailVerification{})
+				if err != nil {
+					return
+				}
+				err = db.Table("email_verifications").Migrator().DropColumn(&EmailVerification{}, "remaining_count")
+				if err != nil {
+					return
+				}
+				dbVersionInt = 3
+			}
+			if dbVersionInt == 3 {
 				err = tx.AutoMigrate(&User{})
 				if err != nil {
 					return
@@ -52,7 +64,8 @@ func migrate(db *gorm.DB) error {
 				}
 			}
 		}
-		dbVersion.Value = "3"
+		dbVersion.Value = "4"
+
 		return tx.Save(&dbVersion).Error
 	})
 }
