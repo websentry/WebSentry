@@ -149,3 +149,5 @@ func (t TX) UpdateUser(id int64, u User) error {
 	u.ID = id
 	return t.tx.Model(&u).Updates(u).Error
 }
+
+// TODO: Cleanup tables withe ExpireAt fields
