@@ -2,7 +2,7 @@
 
 # actual image
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app/
 COPY templates templates/
 COPY websentry .

@@ -3,8 +3,10 @@ package controllers
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/text/language"
 
 	"github.com/websentry/websentry/models"
 	"github.com/websentry/websentry/utils"
@@ -23,8 +25,25 @@ type fieldType int8
 const (
 	emailField fieldType = iota
 	passwordField
-	verficationCodeField
+	verificationCodeField
 )
+
+var languageMatcher language.Matcher
+
+func init() {
+	tags := []language.Tag{
+		language.AmericanEnglish,   // en-US  fallback to this one
+		language.SimplifiedChinese, // zh-Hans
+	}
+	languageMatcher = language.NewMatcher(tags)
+}
+
+type UserInfoJSON struct {
+	Email     string    `json:"email"`
+	Language  string    `json:"language"`
+	TimeZone  string    `json:"timeZone"`
+	CreatedAt time.Time `json:"createdAt"`
+}
 
 // UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
@@ -44,9 +63,14 @@ func UserInfo(c *gin.Context) {
 		return
 	}
 
-	JSONResponse(c, CodeOK, "", gin.H{
-		"email": userData.Email,
-	})
+	UserInfoJSON := UserInfoJSON{
+		Email:     userData.Email,
+		Language:  userData.Language,
+		TimeZone:  userData.TimeZone,
+		CreatedAt: userData.CreatedAt,
+	}
+
+	JSONResponse(c, CodeOK, "", UserInfoJSON)
 }
 
 // UserLogin takes email and password and generate login token if succeed
@@ -126,7 +150,7 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	// we only send a verfication code once
+	// we only send a verification code once
 	// until it is invalid due to exceeding limits of trying
 	// or it expires
 
@@ -153,14 +177,21 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	if isFieldInvalid(gVerificationCode, verficationCodeField) {
+	if isFieldInvalid(gVerificationCode, verificationCodeField) {
 		JSONResponse(c, CodeWrongParam, "Verification format is invalid", nil)
 		return
 	}
 
+	tz, err := time.LoadLocation(c.DefaultQuery("tz", "Asia/Shanghai"))
+	if err != nil {
+		JSONResponse(c, CodeWrongParam, "timezone format is invalid", nil)
+		return
+	}
+	lang, _, _ := languageMatcher.Match(language.Make(c.DefaultQuery("lang", "")))
+
 	var correctVc, userAlreadyExist bool
-	err := models.Transaction(func(tx models.TX) (err error) {
-		correctVc, err = tx.CheckVerficationCode(gEmail, gVerificationCode)
+	err = models.Transaction(func(tx models.TX) (err error) {
+		correctVc, err = tx.CheckVerificationCode(gEmail, gVerificationCode)
 		if !correctVc || err != nil {
 			return
 		}
@@ -170,7 +201,7 @@ func UserCreateWithVerification(c *gin.Context) {
 			return
 		}
 
-		err = tx.CreateUser(gEmail, gPassword)
+		err = tx.CreateUser(gEmail, gPassword, tz, lang)
 		if err != nil {
 			return
 		}
@@ -195,6 +226,47 @@ func UserCreateWithVerification(c *gin.Context) {
 	JSONResponse(c, CodeOK, "", nil)
 }
 
+func UserUpdateSettings(c *gin.Context) {
+	updated := false
+	var user models.User
+
+	// timezone
+	tzStr, isSet := c.GetQuery("tz")
+	if isSet {
+		updated = true
+		tz, err := time.LoadLocation(tzStr)
+		if err != nil {
+			JSONResponse(c, CodeWrongParam, "timezone format is invalid", nil)
+			return
+		}
+		user.TimeZone = tz.String()
+	}
+
+	// language
+	langStr, isSet := c.GetQuery("lang")
+	if isSet {
+		updated = true
+		lang, _, _ := languageMatcher.Match(language.Make(langStr))
+		user.Language = lang.String()
+	}
+
+	if !updated {
+		JSONResponse(c, CodeWrongParam, "no field provided for update", nil)
+		return
+	}
+
+	err := models.Transaction(func(tx models.TX) (err error) {
+		return tx.UpdateUser(c.MustGet("userId").(int64), user)
+	})
+
+	if err != nil {
+		InternalErrorResponse(c, err)
+		return
+	}
+
+	JSONResponse(c, CodeOK, "", nil)
+}
+
 func isFieldInvalid(str string, field fieldType) bool {
 	len := len(str)
 	switch field {
@@ -202,7 +274,7 @@ func isFieldInvalid(str string, field fieldType) bool {
 		return len < minEmailLength || len > maxEmailLength
 	case passwordField:
 		return len < minPasswordLength || len > maxPasswordLength
-	case verficationCodeField:
+	case verificationCodeField:
 		return len != models.VerificationCodeLength
 	default:
 		return true
