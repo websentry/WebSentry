@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	encryptionCost = 14
+	encryptionCost                  = 14
+	verificationCodeValidDuration   = 10 * time.Minute
+	verficationCodeGenerateDuration = 1 * time.Minute
 
-	VerificationCodeLength      = 6
-	maxVerificationCodeTryCount = 100
+	VerificationCodeLength = 6
 )
 
 func (t TX) CheckUserExistence(u string) (bool, error) {
@@ -21,33 +22,21 @@ func (t TX) CheckUserExistence(u string) (bool, error) {
 	return count == 1, err
 }
 
-// CheckEmailVerificationExistence finds out whether an user's verification code is already existed or not
-// It takes a string represents the email
-func (t TX) CheckEmailVerificationExistence(u string) (bool, error) {
-	var count int64
-	err := t.tx.Model(&EmailVerification{}).Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).Count(&count).Error
-	return count == 1, err
-}
-
-// GetUserByEmail get the user's information
-// It takes an email and a struct to store the result
-func (t TX) GetUserByEmail(u string) (*User, error) {
+func (t TX) UserLogin(u, p string) (*int64, error) {
 	var result User
 	err := t.tx.Where(&User{Email: u}).First(&result).Error
+	if err != nil {
+		if IsErrNoDocument(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
 
-	if IsErrNoDocument(err) {
+	if !checkPassword(p, result.Password) {
 		return nil, nil
 	}
 
-	return &result, err
-}
-
-// GetEmailVerificationByEmail get the user's verification by email
-// It takes an email and a struct to store the result
-func (t TX) GetEmailVerificationByEmail(u string) (*EmailVerification, error) {
-	var result EmailVerification
-	err := t.tx.Where(&EmailVerification{Email: u}).Where("expired_at >= ?", time.Now()).First(&result).Error
-	return &result, err
+	return &result.ID, err
 }
 
 // GetUserByID get the user's information by his id,
@@ -61,14 +50,13 @@ func (t TX) GetUserByID(id int64) (*User, error) {
 	return &result, err
 }
 
-// HashPassword encrypts the password
-func HashPassword(p string) (string, error) {
+func hashPassword(p string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(p), encryptionCost)
 	return string(bytes), err
 }
 
 // CheckPassword check if the password matches
-func CheckPassword(p string, hash string) bool {
+func checkPassword(p string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(p))
 	return err == nil
 }
@@ -86,37 +74,72 @@ func generateVerificationCode() string {
 	return string(rst)
 }
 
+// IsLastVerificationCodeGeneratedTimeExceeded checks if the current is within the duration allowed
+// starting from when the latest verification code is created
+func (t TX) IsLastVerificationCodeGeneratedTimeExceeded(u string) (bool, error) {
+	var result EmailVerification
+	err := t.tx.Where(&EmailVerification{Email: u}).Order("expired_at desc").First(&result).Error
+	if err != nil {
+		if IsErrNoDocument(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	threasholdTime := result.ExpiredAt.Add(-verificationCodeValidDuration).Add(verficationCodeGenerateDuration)
+	diff := time.Since(threasholdTime)
+
+	if diff < 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 // CreateCreateEmailVerification create new verfication code associated with an email address
 func (t TX) CreateEmailVerification(u string) (string, error) {
 	v := EmailVerification{
 		Email:            u,
 		VerificationCode: generateVerificationCode(),
-		RemainingCount:   maxVerificationCodeTryCount,
-		ExpiredAt:        time.Now().Add(time.Hour),
+		ExpiredAt:        time.Now().Add(verificationCodeValidDuration),
 	}
 
-	// TODO: create a new one or reuse the old one?
+	// there may exist multiple verfication codes that are valid to the user
 	err := t.tx.Create(&v).Error
 	return v.VerificationCode, err
 }
 
-func (t TX) DeleteEmailVerification(e *EmailVerification) error {
-	return t.tx.Delete(&e).Error
-}
-
-func (t TX) UpdateEmailVerificationRemainingCount(e *EmailVerification) error {
-	return t.tx.Select("remaining_count").Updates(e).Error
-}
-
-func (t TX) CreateUser(email string, pwdHash string) error {
-	user := User{
-		ID:       snowflakeNode.Generate().Int64(),
-		Email:    email,
-		Password: pwdHash,
+// CheckVerficationCode checks if the given verification code is one of the non-expired verification existed in the db
+func (t TX) CheckVerficationCode(u string, vc string) (bool, error) {
+	var result EmailVerification
+	err := t.tx.Where(&EmailVerification{Email: u, VerificationCode: vc}).Where("expired_at >= ?", time.Now()).First(&result).Error
+	if err != nil {
+		if IsErrNoDocument(err) {
+			return false, nil
+		}
+		return false, err
 	}
-	err := t.tx.Create(&user).Error
+	return true, nil
+}
+
+// CreateUser add a new user and the default notification method
+func (t TX) CreateUser(u string, pwdHash string) error {
+	h, err := hashPassword(pwdHash)
 	if err != nil {
 		return err
 	}
-	return NotificationAddEmail(user.ID, email, "--default--")
+
+	user := User{
+		ID:       snowflakeNode.Generate().Int64(),
+		Email:    u,
+		Password: h,
+	}
+
+	err = t.tx.Create(&user).Error
+	if err != nil {
+		return err
+	}
+
+	return NotificationAddEmail(user.ID, u, "--default--")
 }
+
+// TODO: Cleanup tables withe ExpireAt fields

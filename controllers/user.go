@@ -64,10 +64,9 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	var userInfo *models.User
-
+	var userID *int64
 	err := models.Transaction(func(tx models.TX) (err error) {
-		userInfo, err = tx.GetUserByEmail(gEmail)
+		userID, err = tx.UserLogin(gEmail, gPassword)
 		return
 	})
 	if err != nil {
@@ -75,17 +74,17 @@ func UserLogin(c *gin.Context) {
 		return
 	}
 
-	if userInfo == nil || !models.CheckPassword(gPassword, userInfo.Password) {
+	if userID == nil {
 		JSONResponse(c, CodeAuthError, "incorrect email/password", nil)
 		return
 	}
 
 	JSONResponse(c, CodeOK, "", gin.H{
-		"token": utils.TokenGenerate(strconv.FormatInt(userInfo.ID, 16)),
+		"token": utils.TokenGenerate(strconv.FormatInt(*userID, 16)),
 	})
 }
 
-// UserGetSignUpVerification gets user email and password, generate Verification code and wait to be validated
+// UserGetSignUpVerification gets user email, generate Verification code and wait to be validated
 func UserGetSignUpVerification(c *gin.Context) {
 	gEmail := getFormattedEmail(c)
 
@@ -95,8 +94,8 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	var userAlreadyExist, userVerificationExist bool
-	var verificationCode string
+	var vc string
+	var userAlreadyExist, exceededLimit bool
 
 	err := models.Transaction(func(tx models.TX) (err error) {
 		userAlreadyExist, err = tx.CheckUserExistence(gEmail)
@@ -104,12 +103,12 @@ func UserGetSignUpVerification(c *gin.Context) {
 			return
 		}
 
-		userVerificationExist, err = tx.CheckEmailVerificationExistence(gEmail)
-		if userVerificationExist || err != nil {
+		exceededLimit, err = tx.IsLastVerificationCodeGeneratedTimeExceeded(gEmail)
+		if exceededLimit || err != nil {
 			return
 		}
 
-		verificationCode, err = tx.CreateEmailVerification(gEmail)
+		vc, err = tx.CreateEmailVerification(gEmail)
 		return
 	})
 	if err != nil {
@@ -122,11 +121,8 @@ func UserGetSignUpVerification(c *gin.Context) {
 		return
 	}
 
-	if userVerificationExist {
-		// verfication code still valid
-		JSONResponse(c, CodeOK, "", gin.H{
-			"generated": false,
-		})
+	if exceededLimit {
+		JSONResponse(c, CodeExceededLimits, "", nil)
 		return
 	}
 
@@ -135,11 +131,10 @@ func UserGetSignUpVerification(c *gin.Context) {
 	// or it expires
 
 	// TODO: handle the case where the email is failed to sent
-	utils.SendVerificationEmail(gEmail, verificationCode)
+	utils.SendVerificationEmail(gEmail, vc)
 
-	JSONResponse(c, CodeOK, "", gin.H{
-		"generated": true,
-	})
+	// the user should not exist
+	JSONResponse(c, CodeOK, "", nil)
 }
 
 // UserCreateWithVerification checks verification code and create the user in the user database
@@ -163,57 +158,23 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	var userExist, userVerificationExist, exceedLimit, incorrectPwd bool
-	var emailVerifyInfo *models.EmailVerification
-
+	var correctVc, userAlreadyExist bool
 	err := models.Transaction(func(tx models.TX) (err error) {
-		// check if it is already in the Users table
-		userExist, err = tx.CheckUserExistence(gEmail)
-		if userExist || err != nil {
+		correctVc, err = tx.CheckVerficationCode(gEmail, gVerificationCode)
+		if !correctVc || err != nil {
 			return
 		}
 
-		// check if the user exist in UserVerifications table
-		userVerificationExist, err = tx.CheckEmailVerificationExistence(gEmail)
-		if !userVerificationExist || err != nil {
+		userAlreadyExist, err = tx.CheckUserExistence(gEmail)
+		if userAlreadyExist || err != nil {
 			return
 		}
 
-		// check if the verification code is correct
-		emailVerifyInfo, err = tx.GetEmailVerificationByEmail(gEmail)
+		err = tx.CreateUser(gEmail, gPassword)
 		if err != nil {
 			return
 		}
 
-		// gorm cannot update with zero value, unless using pointer in data struct
-		if emailVerifyInfo.RemainingCount <= 1 {
-			exceedLimit = true
-			err = tx.DeleteEmailVerification(emailVerifyInfo)
-			return
-		}
-		exceedLimit = false
-
-		if emailVerifyInfo.VerificationCode != gVerificationCode {
-			emailVerifyInfo.RemainingCount--
-			incorrectPwd = true
-			err = tx.UpdateEmailVerificationRemainingCount(emailVerifyInfo)
-			return
-		}
-		incorrectPwd = false
-
-		// insert to User table
-		hash, err := models.HashPassword(gPassword)
-		if err != nil {
-			return
-		}
-
-		err = tx.CreateUser(gEmail, hash)
-		if err != nil {
-			return
-		}
-
-		// delete used verification code
-		err = tx.DeleteEmailVerification(emailVerifyInfo)
 		return
 	})
 	if err != nil {
@@ -221,23 +182,13 @@ func UserCreateWithVerification(c *gin.Context) {
 		return
 	}
 
-	// hide details to front-end
-	if userExist || !userVerificationExist {
+	if !correctVc {
 		JSONResponse(c, CodeAuthError, "", nil)
 		return
 	}
 
-	if exceedLimit {
-		JSONResponse(c, CodeAuthError, "exceed trying limit", gin.H{
-			"expired": true,
-		})
-		return
-	}
-
-	if incorrectPwd {
-		JSONResponse(c, CodeAuthError, "incorrect verification code", gin.H{
-			"expired": false,
-		})
+	if userAlreadyExist {
+		JSONResponse(c, CodeAlreadyExist, "", nil)
 		return
 	}
 

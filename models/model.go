@@ -26,10 +26,9 @@ type User struct {
 }
 
 type EmailVerification struct {
-	ID               uint   `gorm:"primary_key"`
-	Email            string `gorm:"type:varchar(255);index:email_expiredat"`
-	VerificationCode string `gorm:"type:char(6)"` // verificationCodeLength
-	RemainingCount   int
+	ID               uint      `gorm:"primary_key"`
+	Email            string    `gorm:"type:varchar(255);index:email_expiredat"`
+	VerificationCode string    `gorm:"type:char(6)"` // verificationCodeLength
 	ExpiredAt        time.Time `gorm:"index:email_expiredat"`
 }
 
