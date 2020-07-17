@@ -191,7 +191,7 @@ func UserCreateWithVerification(c *gin.Context) {
 
 	var correctVc, userAlreadyExist bool
 	err = models.Transaction(func(tx models.TX) (err error) {
-		correctVc, err = tx.CheckverificationCode(gEmail, gVerificationCode)
+		correctVc, err = tx.CheckVerificationCode(gEmail, gVerificationCode)
 		if !correctVc || err != nil {
 			return
 		}

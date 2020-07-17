@@ -109,8 +109,8 @@ func (t TX) CreateEmailVerification(u string) (string, error) {
 	return v.VerificationCode, err
 }
 
-// CheckverificationCode checks if the given verification code is one of the non-expired verification existed in the db
-func (t TX) CheckverificationCode(u string, vc string) (bool, error) {
+// CheckVerificationCode checks if the given verification code is one of the non-expired verification existed in the db
+func (t TX) CheckVerificationCode(u string, vc string) (bool, error) {
 	var result EmailVerification
 	err := t.tx.Where(&EmailVerification{Email: u, VerificationCode: vc}).Where("expired_at >= ?", time.Now()).First(&result).Error
 	if err != nil {
