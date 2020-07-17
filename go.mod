@@ -9,12 +9,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/ulule/limiter/v3 v3.3.1
 	github.com/urfave/cli/v2 v2.2.0
-	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
-	golang.org/x/text v0.3.0
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/text v0.3.3
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
-	gorm.io/driver/postgres v0.2.4
-	gorm.io/gorm v0.2.19
+	gorm.io/driver/postgres v0.2.5
+	gorm.io/gorm v0.2.22
 )
 
 go 1.13
