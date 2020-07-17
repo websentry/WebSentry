@@ -63,7 +63,7 @@ def user_info(c: Context) -> None:
 
 @test_case
 def update_user_setting(c: Context) -> None:
-    # Note: one can also update multiple value at the same time
+    # Note: one can also update multiple values at once
     r = requests.post(c.service_url + "v1/user/update", headers={"WS-User-Token": USER1_TOKEN},
                       params={"tz": "Australia/Melbourne"})
     j = r.json()
