@@ -36,9 +36,23 @@ func migrate(db *gorm.DB) error {
 				if err != nil {
 					return
 				}
+				dbVersionInt = 2
+			}
+			if dbVersionInt == 2 {
+				err = tx.AutoMigrate(&User{})
+				if err != nil {
+					return
+				}
+				err = db.Model(&User{}).Where("1 = 1").Updates(&User{
+					Language: "en-US",
+					TimeZone: "Asia/Shanghai",
+				}).Error
+				if err != nil {
+					return
+				}
 			}
 		}
-		dbVersion.Value = "2"
+		dbVersion.Value = "3"
 		return tx.Save(&dbVersion).Error
 	})
 }
