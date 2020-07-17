@@ -38,6 +38,13 @@ func init() {
 	languageMatcher = language.NewMatcher(tags)
 }
 
+type UserInfoJSON struct {
+	Email     string    `json:"email"`
+	Language  string    `json:"language"`
+	TimeZone  string    `json:"timeZone"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // UserInfo returns users' information, including email
 func UserInfo(c *gin.Context) {
 	var userData *models.User
@@ -56,9 +63,14 @@ func UserInfo(c *gin.Context) {
 		return
 	}
 
-	JSONResponse(c, CodeOK, "", gin.H{
-		"email": userData.Email,
-	})
+	UserInfoJSON := UserInfoJSON{
+		Email:     userData.Email,
+		Language:  userData.Language,
+		TimeZone:  userData.TimeZone,
+		CreatedAt: userData.CreatedAt,
+	}
+
+	JSONResponse(c, CodeOK, "", UserInfoJSON)
 }
 
 // UserLogin takes email and password and generate login token if succeed
