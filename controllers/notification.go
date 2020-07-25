@@ -21,6 +21,7 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 	var nid int64
 	var name string
 	var n *models.NotificationMethod
+	var userData *models.User
 	err := models.Transaction(func(tx models.TX) error {
 		var err error
 		nid, err = tx.GetSentryNotification(sentryID)
@@ -32,6 +33,10 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 			return errors.WithStack(err)
 		}
 		n, err = tx.GetNotification(nid)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		userData, err = tx.GetUserByID(n.UserID)
 		return errors.WithStack(err)
 	})
 	if err != nil {
@@ -45,11 +50,17 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 	}
 
 	// TODO: url
+	// TODO: handle i18n
+
+	tz, err := time.LoadLocation(userData.TimeZone)
+	if err != nil {
+		return err
+	}
 
 	data := map[string]string{
 		"name":        name,
-		"beforeTime":  lasttime.Format("2006-01-02 15:04"),
-		"currentTime": time.Now().Format("2006-01-02 15:04"),
+		"beforeTime":  lasttime.In(tz).Format("2006-01-02 15:04"),
+		"currentTime": time.Now().In(tz).Format("2006-01-02 15:04"),
 		"beforeImage": config.GetConfig().BackendURL + "v1/common/get_history_image?filename=" + old,
 		"afterImage":  config.GetConfig().BackendURL + "v1/common/get_history_image?filename=" + new,
 		"similarity":  fmt.Sprintf("%.2f%%", similarity*100),

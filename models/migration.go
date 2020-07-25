@@ -6,15 +6,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func migrate(db *gorm.DB) error {
-	return db.Transaction(func(tx *gorm.DB) (err error) {
+func migrate(rawDB *gorm.DB) error {
+	return rawDB.Transaction(func(tx *gorm.DB) (err error) {
 		err = tx.AutoMigrate(&SystemSetting{})
 		if err != nil {
 			return
 		}
 
 		var dbVersion SystemSetting
-		err = db.FirstOrCreate(&dbVersion, SystemSetting{Key: "db_version"}).Error
+		err = tx.FirstOrCreate(&dbVersion, SystemSetting{Key: "db_version"}).Error
 		if err != nil {
 			return
 		}
@@ -28,7 +28,7 @@ func migrate(db *gorm.DB) error {
 			}
 		} else {
 			if dbVersionInt == 1 {
-				err = db.Model(&Sentry{}).Where("notify_count = ?", -1).Update("notify_count", 0).Error
+				err = tx.Model(&Sentry{}).Where("notify_count = ?", -1).Update("notify_count", 0).Error
 				if err != nil {
 					return
 				}
@@ -44,13 +44,27 @@ func migrate(db *gorm.DB) error {
 				if err != nil {
 					return
 				}
-				err = db.Table("email_verifications").Migrator().DropColumn(&EmailVerification{}, "remaining_count")
+				err = tx.Table("email_verifications").Migrator().DropColumn(&EmailVerification{}, "remaining_count")
+				if err != nil {
+					return
+				}
+				dbVersionInt = 3
+			}
+			if dbVersionInt == 3 {
+				err = tx.AutoMigrate(&User{})
+				if err != nil {
+					return
+				}
+				err = tx.Model(&User{}).Where("1 = 1").Updates(&User{
+					Language: "en-US",
+					TimeZone: "Asia/Shanghai",
+				}).Error
 				if err != nil {
 					return
 				}
 			}
 		}
-		dbVersion.Value = "3"
+		dbVersion.Value = "4"
 
 		return tx.Save(&dbVersion).Error
 	})

@@ -84,7 +84,7 @@ func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) erro
 
 	now := time.Now()
 	tc := (int(now.Sub(result.CreatedAt).Minutes()) / result.Interval) + 1
-	firstTime := sentry.LastCheckTime == nil
+	firstTime := result.LastCheckTime == nil
 	sentry.LastCheckTime = &now
 	sentry.NextCheckTime = result.CreatedAt.Add(time.Minute * time.Duration(tc*result.Interval))
 	sentry.CheckCount = result.CheckCount + 1
