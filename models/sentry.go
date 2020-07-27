@@ -77,7 +77,9 @@ func (t TX) UpdateSentry(sid int64, uid int64, s *Sentry) error {
 	if err != nil {
 		return err
 	}
+	s.ID = sid
 
+	// TODO: update the "NextCheckTime" when setting "RunningState" to "Running"
 	return t.tx.Model(s).Updates(s).Error
 }
 

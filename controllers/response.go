@@ -23,7 +23,7 @@ var msgMap = map[int]string{
 	// common
 	0:  "OK",
 	-1: "Authorization error",
-	-2: "Wrong parameter",
+	-2: "Invalid parameter",
 
 	-4: "Exceeded limits",
 	-5: "Record does not exist",

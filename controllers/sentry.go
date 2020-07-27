@@ -22,7 +22,7 @@ import (
 func SentryRequestFullScreenshot(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
-		JSONResponse(c, CodeWrongParam, "Wrong protocol", nil)
+		JSONResponse(c, CodeWrongParam, "Invalid protocol", nil)
 		return
 	}
 
@@ -58,6 +58,7 @@ type SentryListItemJSON struct {
 	ID            string     `json:"id"`
 	Name          string     `json:"name"`
 	URL           string     `json:"url"`
+	RunningState  int        `json:"runningState"`
 	LastCheckTime *time.Time `json:"lastCheckTime"`
 }
 
@@ -85,6 +86,7 @@ func SentryList(c *gin.Context) {
 			return
 		}
 		sentries[i].URL = task["url"].(string)
+		sentries[i].RunningState = int(results[i].RunningState)
 		sentries[i].LastCheckTime = results[i].LastCheckTime
 	}
 
@@ -107,6 +109,7 @@ type NotificationMethodJson struct {
 type SentryJSON struct {
 	ID            string                 `json:"id"`
 	Name          string                 `json:"name"`
+	RunningState  int                    `json:"runningState"`
 	Notification  NotificationMethodJson `json:"notification"`
 	LastCheckTime *time.Time             `json:"lastCheckTime"`
 	Interval      int                    `json:"interval"`
@@ -120,7 +123,7 @@ type SentryJSON struct {
 func SentryInfo(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Query("id"), 16, 64)
 	if err != nil {
-		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
+		JSONResponse(c, CodeWrongParam, "Invalid sentry id", nil)
 		return
 	}
 
@@ -177,7 +180,8 @@ func SentryInfo(c *gin.Context) {
 	}
 
 	sentryJSON := SentryJSON{
-		strconv.FormatInt(s.ID, 16), s.Name, notificationJson, s.LastCheckTime,
+		strconv.FormatInt(s.ID, 16), s.Name, int(s.RunningState),
+		notificationJson, s.LastCheckTime,
 		s.Interval, s.CheckCount, s.NotifyCount,
 		imageHistoryJSON, task, s.CreatedAt,
 	}
@@ -191,13 +195,13 @@ func SentryCreate(c *gin.Context) {
 	u, err := url.ParseRequestURI(c.Query("url"))
 
 	if err != nil || !(strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) {
-		JSONResponse(c, CodeWrongParam, "Wrong protocol", nil)
+		JSONResponse(c, CodeWrongParam, "Invalid protocol", nil)
 		return
 	}
 
 	notification, err := strconv.ParseInt(c.Query("notification"), 16, 64)
 	if err != nil {
-		JSONResponse(c, CodeWrongParam, "Wrong notificationId", nil)
+		JSONResponse(c, CodeWrongParam, "Invalid notificationId", nil)
 		return
 	}
 
@@ -207,7 +211,7 @@ func SentryCreate(c *gin.Context) {
 	height, _ := strconv.ParseInt(c.Query("height"), 10, 32)
 
 	if !(x >= 0 && y >= 0 && width > 0 && height > 0) {
-		JSONResponse(c, CodeWrongParam, "Wrong area", nil)
+		JSONResponse(c, CodeWrongParam, "Invalid area", nil)
 		return
 	}
 
@@ -280,7 +284,7 @@ func SentryCreate(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, models.ErrInvalidNotificationID) {
-			JSONResponse(c, CodeNotExist, "notification does not exist", nil)
+			JSONResponse(c, CodeWrongParam, "notification does not exist", nil)
 		} else {
 			InternalErrorResponse(c, err)
 		}
@@ -292,10 +296,102 @@ func SentryCreate(c *gin.Context) {
 	})
 }
 
+func SentryUpdate(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Query("id"), 16, 64)
+	if err != nil {
+		JSONResponse(c, CodeWrongParam, "Invalid sentry id", nil)
+		return
+	}
+
+	sentry := models.Sentry{}
+
+	action := false
+
+	similarityThresholdStr, ok := c.GetQuery("similarityThreshold")
+	if ok {
+		action = true
+		similarityThreshold, err := strconv.ParseFloat(similarityThresholdStr, 64)
+		if err != nil || similarityThreshold <= 0 || similarityThreshold > 1 {
+			JSONResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
+			return
+		}
+		trigger := models.Trigger{SimilarityThreshold: similarityThreshold}
+		triggerJSON, err := json.Marshal(&trigger)
+		if err != nil {
+			InternalErrorResponse(c, errors.WithStack(err))
+			return
+		}
+		sentry.Trigger = string(triggerJSON)
+	}
+
+	intervalStr, ok := c.GetQuery("interval")
+	if ok {
+		action = true
+		sentry.Interval, err = strconv.Atoi(intervalStr)
+		if err != nil || sentry.Interval < 15 {
+			JSONResponse(c, CodeWrongParam, "Invalid interval", nil)
+			return
+		}
+	}
+
+	name, ok := c.GetQuery("name")
+	if ok {
+		action = true
+		sentry.Name = name
+	}
+
+	runningStateStr, ok := c.GetQuery("runningState")
+	if ok {
+		action = true
+		switch runningStateStr {
+		case "1":
+			sentry.RunningState = models.RSRunning
+		case "-1":
+			sentry.RunningState = models.RSPaused
+		default:
+			JSONResponse(c, CodeWrongParam, "Invalid runningState", nil)
+			return
+		}
+	}
+
+	notificationStr, ok := c.GetQuery("notification")
+	if ok {
+		action = true
+		sentry.NotificationID, err = strconv.ParseInt(notificationStr, 16, 64)
+		if err != nil {
+			JSONResponse(c, CodeWrongParam, "Invalid notificationId", nil)
+			return
+		}
+	}
+
+	if !action {
+		JSONResponse(c, CodeWrongParam, "no field provided for update", nil)
+		return
+	}
+
+	err = models.Transaction(func(tx models.TX) (err error) {
+		return tx.UpdateSentry(id, c.MustGet("userId").(int64), &sentry)
+	})
+	if err != nil {
+		if models.IsErrNoDocument(err) {
+			JSONResponse(c, CodeNotExist, "", nil)
+			return
+		}
+		if errors.Is(err, models.ErrInvalidNotificationID) {
+			JSONResponse(c, CodeWrongParam, "notification does not exist", nil)
+			return
+		}
+		InternalErrorResponse(c, err)
+		return
+	}
+
+	JSONResponse(c, CodeOK, "", gin.H{})
+}
+
 func SentryRemove(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Query("id"), 16, 64)
 	if err != nil {
-		JSONResponse(c, CodeWrongParam, "Wrong sentry id", nil)
+		JSONResponse(c, CodeWrongParam, "Invalid sentry id", nil)
 		return
 	}
 
