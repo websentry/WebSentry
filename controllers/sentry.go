@@ -241,6 +241,7 @@ func SentryCreate(c *gin.Context) {
 
 	s := &models.Sentry{}
 	s.Name = c.Query("name")
+	s.RunningState = models.RSRunning
 	s.UserID = c.MustGet("userId").(int64)
 	s.NotificationID = notification
 	s.NextCheckTime = time.Now()
@@ -389,6 +390,11 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		if err != nil {
 			utils.ImageDelete(imageFilename, false)
 		}
+
+		if errors.Is(err, models.ErrSentryNotRunning) {
+			log.Println(err)
+			err = nil
+		}
 		return errors.WithStack(err)
 	}
 
@@ -438,5 +444,9 @@ func compareSentryTaskImage(tid int32, ti *taskInfo) error {
 		}
 	}
 
+	if errors.Is(err, models.ErrSentryNotRunning) {
+		log.Println(err)
+		err = nil
+	}
 	return errors.WithStack(err)
 }

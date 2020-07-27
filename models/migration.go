@@ -62,9 +62,23 @@ func migrate(rawDB *gorm.DB) error {
 				if err != nil {
 					return
 				}
+				dbVersionInt = 4
+			}
+			if dbVersionInt == 4 {
+				err = tx.AutoMigrate(&Sentry{})
+				if err != nil {
+					return
+				}
+				err = tx.Model(&Sentry{}).Where("1 = 1").Updates(&Sentry{
+					RunningState: RSRunning,
+				}).Error
+				if err != nil {
+					return
+				}
+				// dbVersionInt = 5
 			}
 		}
-		dbVersion.Value = "4"
+		dbVersion.Value = "5"
 
 		return tx.Save(&dbVersion).Error
 	})

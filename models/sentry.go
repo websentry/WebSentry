@@ -1,16 +1,19 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
 )
 
+var ErrSentryNotRunning = errors.New("Sentry is not in running state.")
+
 // If there isn't an unchecked sentry, it returns (nil, nil, nil)
 func (t TX) GetUncheckedSentry() (*Sentry, *SentryImage, error) {
 	var sResult Sentry
 	now := time.Now()
-	err := t.tx.Where("next_check_time <= ?", now).Order("next_check_time").First(&sResult).Error
+	err := t.tx.Where("next_check_time <= ?", now).Where("running_state", RSRunning).Order("next_check_time").First(&sResult).Error
 	if err != nil {
 		if IsErrNoDocument(err) {
 			return nil, nil, nil
@@ -75,9 +78,13 @@ func (t TX) GetSentryNotification(id int64) (int64, error) {
 func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) error {
 
 	var result Sentry
-	err := t.tx.Select("interval, created_at, notify_count, check_count, last_check_time").First(&result, id).Error
+	err := t.tx.Select("interval, created_at, notify_count, check_count, last_check_time, running_state").First(&result, id).Error
 	if err != nil {
 		return err
+	}
+
+	if result.RunningState != RSRunning {
+		return ErrSentryNotRunning
 	}
 
 	var sentry Sentry
