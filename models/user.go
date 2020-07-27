@@ -142,7 +142,7 @@ func (t TX) CreateUser(u string, pwd string, tz *time.Location, lang language.Ta
 		return err
 	}
 
-	return NotificationAddEmail(user.ID, u, "--default--")
+	return t.NotificationAddEmail(user.ID, u, "--default--")
 }
 
 func (t TX) UpdateUser(id int64, u User) error {

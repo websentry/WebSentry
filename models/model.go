@@ -49,6 +49,7 @@ type Sentry struct {
 	ID             int64  `gorm:"primary_key;auto_increment:false"` // use snowflake for this ID
 	Name           string `gorm:"type:varchar(100)"`
 	UserID         int64  `gorm:"index"` // foreignkey: User.ID
+	RunningState   RunningState
 	NotificationID int64  // foreignkey: NotificationMethod.ID
 	Trigger        string // json
 	LastCheckTime  *time.Time

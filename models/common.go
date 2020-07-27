@@ -8,20 +8,20 @@ import (
 
 // TODO: check [RowsAffected] ?
 
-var db *gorm.DB
+var gDB *gorm.DB
 var snowflakeNode *snowflake.Node
 
 type TX struct {
 	tx *gorm.DB
 }
 
-func Init(_db *gorm.DB) (err error) {
-	db = _db
+func Init(db *gorm.DB) (err error) {
+	gDB = db
 	snowflakeNode, err = snowflake.NewNode(1)
 	if err != nil {
 		return
 	}
-	return migrate(db)
+	return migrate()
 }
 
 func IsErrNoDocument(err error) bool {
@@ -29,7 +29,7 @@ func IsErrNoDocument(err error) bool {
 }
 
 func Transaction(fun func(tx TX) error) error {
-	return db.Transaction(func(tx *gorm.DB) error {
+	return gDB.Transaction(func(tx *gorm.DB) error {
 		return fun(TX{tx: tx})
 	})
 }

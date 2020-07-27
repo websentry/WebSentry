@@ -59,6 +59,7 @@ func setupRouter() *gin.Engine {
 				sentryGroup.POST("/list", controllers.SentryList)
 				sentryGroup.POST("/info", controllers.SentryInfo)
 				sentryGroup.POST("/remove", controllers.SentryRemove)
+				sentryGroup.POST("/update", controllers.SentryUpdate)
 
 				screenshot := sentryGroup.Group("")
 				screenshot.Use(middlewares.GetScreenshotLimiter())
