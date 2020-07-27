@@ -201,17 +201,6 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
-	exists, err := models.NotificationCheckOwner(notification, c.MustGet("userId").(int64))
-	if err != nil {
-		InternalErrorResponse(c, err)
-		return
-	}
-
-	if !exists {
-		JSONResponse(c, CodeNotExist, "notification does not exist", nil)
-		return
-	}
-
 	x, _ := strconv.ParseInt(c.Query("x"), 10, 32)
 	y, _ := strconv.ParseInt(c.Query("y"), 10, 32)
 	width, _ := strconv.ParseInt(c.Query("width"), 10, 32)
@@ -227,16 +216,16 @@ func SentryCreate(c *gin.Context) {
 		return
 	}
 
-	var similarityThreshold float64
-	if c.Query("similarityThreshold") == "" {
-		// default value
-		similarityThreshold = 0.9999
-	} else {
-		similarityThreshold, err = strconv.ParseFloat(c.Query("similarityThreshold"), 64)
-		if err != nil || similarityThreshold <= 0 || similarityThreshold > 1 {
-			JSONResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
-			return
-		}
+	similarityThreshold, err := strconv.ParseFloat(c.DefaultQuery("similarityThreshold", "0.9999"), 64)
+	if err != nil || similarityThreshold <= 0 || similarityThreshold > 1 {
+		JSONResponse(c, CodeWrongParam, "Invalid similarityThreshold", nil)
+		return
+	}
+
+	interval, err := strconv.Atoi(c.DefaultQuery("interval", "240")) // 4 hours
+	if err != nil || interval < 15 {
+		JSONResponse(c, CodeWrongParam, "Invalid interval", nil)
+		return
 	}
 
 	s := &models.Sentry{}
@@ -245,7 +234,7 @@ func SentryCreate(c *gin.Context) {
 	s.UserID = c.MustGet("userId").(int64)
 	s.NotificationID = notification
 	s.NextCheckTime = time.Now()
-	s.Interval = 4 * 60 // 4 hours
+	s.Interval = interval
 	s.CheckCount = 0
 	s.NotifyCount = 0
 
@@ -288,8 +277,13 @@ func SentryCreate(c *gin.Context) {
 		sid, err = tx.CreateSentry(s)
 		return
 	})
+
 	if err != nil {
-		InternalErrorResponse(c, err)
+		if errors.Is(err, models.ErrInvalidNotificationID) {
+			JSONResponse(c, CodeNotExist, "notification does not exist", nil)
+		} else {
+			InternalErrorResponse(c, err)
+		}
 		return
 	}
 

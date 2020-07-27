@@ -7,7 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-var ErrSentryNotRunning = errors.New("Sentry is not in running state.")
+var (
+	ErrSentryNotRunning      = errors.New("Sentry is not in running state.")
+	ErrInvalidNotificationID = errors.New("Invalid notification ID.")
+	ErrZeroAffectedRows      = errors.New("Zero affected rows.")
+)
 
 // If there isn't an unchecked sentry, it returns (nil, nil, nil)
 func (t TX) GetUncheckedSentry() (*Sentry, *SentryImage, error) {
@@ -46,16 +50,43 @@ func (t TX) GetSentry(id int64) (*Sentry, error) {
 
 func (t TX) CreateSentry(s *Sentry) (int64, error) {
 	s.ID = snowflakeNode.Generate().Int64()
+	err := t.notificationCheckOwner(s.NotificationID, s.UserID)
+	if err != nil {
+		if IsErrNoDocument(err) {
+			return 0, ErrInvalidNotificationID
+		} else {
+			return 0, err
+		}
+	}
 	return s.ID, t.tx.Create(s).Error
 }
 
-func (t TX) DeleteSentry(id int64, uid int64) error {
-	res := t.tx.Delete(&Sentry{ID: id, UserID: uid})
-	err := res.Error
-	if err == nil && res.RowsAffected == 0 {
-		err = gorm.ErrRecordNotFound
+func (t TX) UpdateSentry(sid int64, uid int64, s *Sentry) error {
+	if s.NotificationID != 0 {
+		err := t.notificationCheckOwner(s.NotificationID, uid)
+		if err != nil {
+			if IsErrNoDocument(err) {
+				return ErrInvalidNotificationID
+			} else {
+				return err
+			}
+		}
 	}
-	return err
+
+	err := t.sentryCheckOwner(sid, uid)
+	if err != nil {
+		return err
+	}
+
+	return t.tx.Model(s).Updates(s).Error
+}
+
+func (t TX) DeleteSentry(id int64, uid int64) error {
+	err := t.sentryCheckOwner(id, uid)
+	if err != nil {
+		return err
+	}
+	return t.tx.Delete(&Sentry{ID: id}).Error
 }
 
 func (t TX) GetImageHistory(id int64) (results []SentryImage, err error) {
@@ -113,4 +144,15 @@ func (t TX) UpdateSentryAfterCheck(id int64, changed bool, newImage string) erro
 	}
 
 	return t.tx.Model(&Sentry{ID: id}).Updates(&sentry).Error
+}
+
+func (t TX) sentryCheckOwner(id int64, userID int64) error {
+	var count int64
+	err := t.tx.Model(&Sentry{}).Where(&Sentry{ID: id, UserID: userID}).Count(&count).Error
+	if err == nil {
+		if count != 1 {
+			return gorm.ErrRecordNotFound
+		}
+	}
+	return err
 }
