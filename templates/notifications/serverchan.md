@@ -1,4 +1,4 @@
-## [WebSentry] {{ .name }}: change detected
+## [WebSentry] [{{ .name }}]({{ .sentryUrl }}): change detected
 
 Similarity: {{ .similarity }}
 

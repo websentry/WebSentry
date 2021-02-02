@@ -49,8 +49,8 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 		return errors.WithStack(err)
 	}
 
-	// TODO: url
 	// TODO: handle i18n
+	// TODO: refactor this
 
 	tz, err := time.LoadLocation(userData.TimeZone)
 	if err != nil {
@@ -64,6 +64,7 @@ func toggleNotification(sentryID int64, lasttime time.Time, old string, new stri
 		"beforeImage": config.GetConfig().BackendURL + "v1/common/get_history_image?filename=" + old,
 		"afterImage":  config.GetConfig().BackendURL + "v1/common/get_history_image?filename=" + new,
 		"similarity":  fmt.Sprintf("%.2f%%", similarity*100),
+		"sentryUrl":   config.GetConfig().FrontendURL + "dashboard/sentry/" + strconv.FormatInt(sentryID, 16),
 	}
 
 	title := name + ": change detected"

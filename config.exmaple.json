@@ -15,6 +15,7 @@
   "workerKey": "testkey",
   "tokenSecretKey": "secretkey",
   "backendUrl": "http://127.0.0.1:8080/",
+  "frontendUrl": "http://127.0.0.1:8000/",
   "crosAllowOrigins": ["*"],
   "forwardedByClientIP": true
 }

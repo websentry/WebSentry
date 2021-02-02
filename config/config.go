@@ -14,6 +14,7 @@ type Config struct {
 	WorkerKey           string            `json:"workerKey"`
 	TokenSecretKey      string            `json:"tokenSecretKey"`
 	BackendURL          string            `json:"backendUrl"`
+	FrontendURL         string            `json:"frontendUrl"`
 	CROSAllowOrigins    []string          `json:"crosAllowOrigins"`
 	ForwardedByClientIP bool              `json:"forwardedByClientIP"`
 }

@@ -5,7 +5,7 @@
         Hello,
         <br>
         <br>
-        There is a change detected by your sentry: <b>{{ .name }}</b>. <br>
+        There is a change detected by your sentry: <a href="{{ .sentryUrl }}"><b>{{ .name }}</b></a>. <br>
         Similarity: {{ .similarity }}
     </td>
 </tr>
@@ -14,14 +14,18 @@
         <table border="0">
             <tr>
                 <td style="text-align: center;">
-                    <img style="max-width:60%;" src="{{ .beforeImage }}">
+                    <a href="{{ .beforeImage }}">
+                        <img style="max-width:60%;" src="{{ .beforeImage }}">
+                    </a>
                     <br />
                     <b>Before</b>
                     <br />
                     <p>{{ .beforeTime }}</p>
                 </td>
                 <td style="text-align: center;">
-                    <img style="max-width:60%;" src="{{ .afterImage }}">
+                    <a href="{{ .afterImage }}">
+                        <img style="max-width:60%;" src="{{ .afterImage }}">
+                    </a>
                     <br />
                     <b>Current</b>
                     <br />
