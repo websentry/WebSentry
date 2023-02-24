@@ -9,8 +9,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/ulule/limiter/v3 v3.5.0
 	github.com/urfave/cli/v2 v2.2.0
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
-	golang.org/x/text v0.3.3
+	golang.org/x/crypto v0.1.0
+	golang.org/x/text v0.4.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
 	gorm.io/driver/postgres v0.2.6
